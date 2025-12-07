@@ -137,3 +137,44 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Vite cache directories
+.vite/
+node_modules/.vite/
+Auction-frontend/.vite/
+Auction_frontend/.vite/
+
+# React / Vite build output
+dist/
+build/
+
+# PostgreSQL
+*.sql.backup
+*.dump
+pgdata/
+postgres-data/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs
+*.log.*

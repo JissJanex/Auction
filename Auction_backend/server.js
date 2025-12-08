@@ -16,7 +16,7 @@ app.listen(3000, () =>{
 
 //Get all active auctions
 app.get("/auctions", async (req, res) => {
-    const result = await db.query("SELECT * FROM auctions WHERE status = 'active'");
+    const result = await db.query("SELECT * FROM auctions");
     res.json(result.rows);
 });
 

@@ -1,19 +1,19 @@
 import { Link } from "react-router-dom";
 import AllAuctions from "../components/AllAuctions";
-import PlaceBid from "../components/PlaceBid";
-import CreateAuction from "../components/CreateAuction";
 
 function AuctionPage() {
   return (
-    <>
+    <div>
       <AllAuctions />
-      <Link to="/createauction">
-        <button>Create Auction</button>
-      </Link>
-      <Link to="/placebid">
-        <button>Place Bid</button>
-      </Link>
-    </>
+      
+      <div className="action-buttons">
+        <Link to="/createauction">
+          <button className="btn btn-primary btn-lg">
+            ➕ Create New Auction
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 }
 

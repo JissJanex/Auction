@@ -5,6 +5,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import AuctionPage from "./pages/AuctionPage";
 import CreateAuction from "./components/CreateAuction";
+import AuctionDetails from "./pages/AuctionDetails";
+import EndedAuctions from "./pages/EndedAuctions";
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
         <Routes>
           <Route path="/" element={<AuctionPage />} />
           <Route path="/createauction" element={<CreateAuction />} />
+          <Route path="/auction/:id" element={<AuctionDetails />} />
+          <Route path="/auctions/ended" element={<EndedAuctions />} />
         </Routes>
       </main>
 

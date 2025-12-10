@@ -8,7 +8,7 @@ function Header() {
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
           <span className="navbar-logo">
-            <span>🔨</span> Auction<span>Hub</span>
+            <span>Auction</span> <span>Hub</span>
           </span>
         </Link>
         <div className="navbar-nav">
@@ -22,7 +22,7 @@ function Header() {
             to="/createauction" 
             className={`nav-link ${location.pathname === '/createauction' ? 'active' : ''}`}
           >
-            ➕ Create Auction
+            Create Auction
           </Link>
         </div>
       </div>

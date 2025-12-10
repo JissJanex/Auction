@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 
 export default function PlaceBid({ auction, onBidPlaced } = {}) {
   const [bid, setBid] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleBid = async () => {
     // Validate auction prop
@@ -15,16 +14,16 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
     // Validate bid amount
     const amount = parseFloat(bid);
     if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid bid amount greater than 0");
       return;
-    }else if (auction.highest_bid && amount <= auction.highest_bid) {
-      toast.error(`Bid must be higher than current highest bid of $${auction.highest_bid}`);
+    }else if (auction.current_bid && amount <= auction.current_bid) {
+      toast.error(`Bid must be higher than current highest bid of $${auction.current_bid}`);
       return;
     }else if (amount < 5) {
       toast.error("Minimum bid amount is $5");
       return;
     }
 
-    setLoading(true);
     try {
       const res = await axios.post("http://localhost:3000/bids", {
         auction_id: auction.id,
@@ -38,8 +37,6 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
       }
     } catch (error) {
       console.error("Error placing bid:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -51,16 +48,14 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
         placeholder="$0.00"
         value={bid}
         onChange={(e) => setBid(e.target.value)}
-        disabled={loading}
         min="0"
         step="0.01"
       />
       <button
         className="bid-button"
         onClick={handleBid}
-        disabled={loading}
       >
-        {loading ? "..." : "BID"}
+        BID
       </button>
     </div>
   );

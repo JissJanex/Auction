@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 
 function CreateAuction() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [createdAuction, setCreatedAuction] = useState({
     title: "",
     description: "",
@@ -28,7 +27,6 @@ function CreateAuction() {
       return;
     }
 
-    setLoading(true);
     try {
       const response = await axios.post("http://localhost:3000/auctions", createdAuction);
       console.log("Auction created:", response.data);
@@ -47,8 +45,6 @@ function CreateAuction() {
     } catch (error) {
       console.error("Error creating auction:", error);
       toast.error("Failed to create auction. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -119,7 +115,7 @@ function CreateAuction() {
 
           <div className="input-group">
             <label className="input-label" htmlFor="end_time">
-              🏁 End Time
+              End Time
             </label>
             <input
               id="end_time"
@@ -141,9 +137,8 @@ function CreateAuction() {
             <button 
               type="submit" 
               className="btn btn-accent btn-lg"
-              disabled={loading}
             >
-              {loading ? "Creating..." : "Create Auction"}
+              Create Auction
             </button>
           </div>
         </form>

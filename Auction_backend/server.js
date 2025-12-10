@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import {db} from "./db.js";
+import {db} from "./conf/db.js";
 
 const app = express();
 app.use(cors());
@@ -14,11 +14,31 @@ app.listen(3000, () =>{
     console.log("Server is running on port 3000");
 })
 
-//Get all active auctions
+//Get all active or upcoming auctions
 app.get("/auctions", async (req, res) => {
-    const result = await db.query("SELECT * FROM auctions");
+    const result = await db.query("SELECT * FROM auctions WHERE status IN ('active', 'upcoming')");
     res.json(result.rows);
 });
+
+//Get all ended auctions
+app.get("/auctions/ended", async (req, res) => {
+  try {
+    const result = await db.query("SELECT * FROM auctions WHERE status = 'ended'");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching ended auctions:", err);
+    res.status(500).json({ error: "Failed to fetch ended auctions" });
+  }
+});
+
+//Get a single auction
+app.get("/auctions/:id", async (req, res) => {
+  const { id } = req.params;
+  const result = await db.query("SELECT * FROM auctions WHERE id = $1", [id]);
+  res.json(result.rows[0]);
+});
+
+
 
 //Insert a new auction
 app.post("/auctions", async (req, res) => {

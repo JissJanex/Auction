@@ -5,6 +5,7 @@ import PlaceBid from "../components/PlaceBid";
 
 function AuctionDetails() {
     const [auction, setAuction] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     //To fetch the auction id from the url
     const { id } = useParams();
@@ -15,6 +16,8 @@ function AuctionDetails() {
             setAuction(res.data);
         } catch (error) {
             console.error("Error fetching auction details:", error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -43,6 +46,10 @@ function AuctionDetails() {
         if (hours > 0) return `${hours}h ${minutes}m`;
         return `${minutes}m`;
     };
+
+    if (loading) {
+        return null;
+    }
 
     if (!auction) {
         return (

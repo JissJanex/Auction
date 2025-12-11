@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 function EndedAuctions() {
     const [endedAuctions, setEndedAuctions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const fetchAuctions = async () => {
         try {
@@ -12,12 +13,18 @@ function EndedAuctions() {
             setEndedAuctions(response.data);
         } catch (error) {
             console.error("Error fetching auctions:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchAuctions();
     }, []);
+
+    if (loading) {
+        return null;
+    }
 
     if (endedAuctions.length === 0) {
         return (

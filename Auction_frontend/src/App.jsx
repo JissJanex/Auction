@@ -23,8 +23,8 @@ function App() {
     localStorage.removeItem("token");
     setShowLogoutModal(false);
     navigate("/");
-    // Force header to re-check login state
-    window.dispatchEvent(new Event('storage'));
+    // Notify components about auth state change
+    window.dispatchEvent(new Event('authChange'));
   };
 
   const handleCancelLogout = () => {

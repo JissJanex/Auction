@@ -10,6 +10,8 @@ function LoginSignup() {
     name: "",
   });
   const [focusedField, setFocusedField] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -18,6 +20,7 @@ function LoginSignup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
     try {
       if (isLogin) {
         const response = await axios.post("http://localhost:3000/auth/login", {
@@ -25,6 +28,7 @@ function LoginSignup() {
           password: formData.password,
         });
         localStorage.setItem("token", response.data.token);
+        window.dispatchEvent(new Event('authChange'));
         navigate("/");
       } else {
         const response = await axios.post("http://localhost:3000/auth/signup", {
@@ -33,11 +37,16 @@ function LoginSignup() {
           password: formData.password,
         });
         localStorage.setItem("token", response.data.token);
+        window.dispatchEvent(new Event('authChange'));
         navigate("/");
       }
     } catch (error) {
       console.error(isLogin ? "Login error:" : "Signup error:", error);
-      alert(error.response?.data?.error || "Authentication failed");
+      if (error.response?.status === 400 && isLogin) {
+        setErrorMessage("Username or password is wrong");
+      } else {
+        setErrorMessage(error.response?.data?.error || "Authentication failed");
+      }
     }
   };
 
@@ -123,9 +132,15 @@ function LoginSignup() {
                     onFocus={() => setFocusedField("name")}
                     onBlur={() => setFocusedField(null)}
                     className="form-input-modern"
-                    placeholder="John Doe"
+                    placeholder="Your full name"
                     required={!isLogin}
                   />
+                </div>
+              )}
+
+              {errorMessage && (
+                <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem", fontWeight: "500" }}>
+                  {errorMessage}
                 </div>
               )}
 
@@ -159,18 +174,32 @@ function LoginSignup() {
                 <label htmlFor="password" className="form-label-modern">
                   Password
                 </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onFocus={() => setFocusedField("password")}
-                  onBlur={() => setFocusedField(null)}
-                  className="form-input-modern"
-                  placeholder="••••••••"
-                  required
-                />
+                <div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField("password")}
+                    onBlur={() => setFocusedField(null)}
+                    className="form-input-modern"
+                    placeholder="••••••••"
+                    required
+                  />
+
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      id="show-password-checkbox"
+                      type="checkbox"
+                      checked={showPassword}
+                      onChange={(e) => setShowPassword(e.target.checked)}
+                    />
+                    <label htmlFor="show-password-checkbox" style={{ fontSize: '0.9rem', color: 'var(--gray-700)' }}>
+                      Show password
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <button type="submit" className="btn-auth-submit">

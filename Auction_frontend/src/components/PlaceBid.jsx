@@ -1,11 +1,41 @@
-import { useState } from "react";
-import axios from "axios";
+import { useState , useEffect, useRef} from "react";
+import { io } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 export default function PlaceBid({ auction, onBidPlaced } = {}) {
   const [bid, setBid] = useState("");
+  const [bids, setBids] = useState([]);
   const navigate = useNavigate();
+
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    socketRef.current = io("http://localhost:3000");
+
+    // Listen for new bids from server
+    socketRef.current.on("bidUpdate", (newBid) => {
+      if (newBid.auction_id === auction.id) {
+        setBids((prev) => [...prev, newBid]);
+        if (typeof onBidPlaced === "function") {
+          onBidPlaced(newBid);
+        }
+      }
+      
+    });
+
+    // Listen for errors
+    socketRef.current.on("bidError", (err) => {
+      toast.error(err.error);
+    });
+
+    return () => {
+      socketRef.current.off("bidUpdate");
+      socketRef.current.off("bidError");
+      socketRef.current.disconnect();
+    };
+  }, [auction.id, onBidPlaced]);
 
   const handleBid = async () => {
     // Validate auction prop
@@ -35,37 +65,14 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
       return;
     }
 
-    try {
-      const res = await axios.post(
-        "http://localhost:3000/bids",
-        {
-          auction_id: auction.id,
-          amount,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setBid(""); // Clear input after successful bid
-      toast.success("Bid placed successfully!");
-      // Notify parent to refresh or update current bid
-      if (typeof onBidPlaced === "function") {
-        onBidPlaced({ amount, auctionId: auction.id, response: res.data });
-      }
-    } catch (error) {
-      console.error("Error placing bid:", error);
-      if (error.response?.status === 400) { //Owner bidding own auction
-        toast.error("You cannot bid on your own auction");
-      } else if (error.response?.status === 401) {
-        toast.error("Session expired. Please login again");
-        localStorage.removeItem("token");
-        navigate("/login");
-      } else {
-        toast.error("Failed to place bid. Please try again");
-      }
-    }
+    // Send bid to server via Websocket
+    socketRef.current.emit("placeBid", {
+      auction_id: auction.id,
+      user_id: jwtDecode(token).id,
+      amount,
+    });
+
+    setBid(""); // clear input
   };
 
   return (

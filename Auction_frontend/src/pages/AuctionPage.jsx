@@ -26,15 +26,26 @@ function AuctionPage() {
 
   // Check if user is logged in to display name
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUser(decoded.name);
-      } catch (error) {
-        console.error("Error decoding token:", error);
+    const checkUser = () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          setUser(decoded.name);
+        } catch (error) {
+          console.error("Error decoding token:", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
-    }
+    };
+
+    checkUser();
+
+    // Listen for auth changes (login/logout)
+    window.addEventListener('authChange', checkUser);
+    return () => window.removeEventListener('authChange', checkUser);
   }, []);
 
   if (loading) {

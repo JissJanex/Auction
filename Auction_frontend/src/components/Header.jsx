@@ -11,14 +11,14 @@ function Header({ onLogoutClick }) {
     setIsLoggedIn(!!token);
   }, [location]); // Re-check on route change
 
-  // Listen for storage events to update login state
+  // Listen for auth changes (login/logout)
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleAuthChange = () => {
       const token = localStorage.getItem("token");
       setIsLoggedIn(!!token);
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('authChange', handleAuthChange);
+    return () => window.removeEventListener('authChange', handleAuthChange);
   }, []);
 
   return (

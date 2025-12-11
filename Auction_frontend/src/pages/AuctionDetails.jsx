@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
+import { io } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
+import { toast } from "react-toastify";
 import PlaceBid from "../components/PlaceBid";
 
 function AuctionDetails() {
     const [auction, setAuction] = useState(null);
     const [loading, setLoading] = useState(true);
+    const socketRef = useRef(null);
+    const hasBeenOutbidRef = useRef(false); // Track if user has been notified about being outbid
 
     //To fetch the auction id from the url
     const { id } = useParams();
@@ -23,6 +28,54 @@ function AuctionDetails() {
 
     useEffect(() => {
         fetchAuction();
+    }, [id]);
+
+    // Socket.IO connection for real-time bid updates
+    useEffect(() => {
+        socketRef.current = io("http://localhost:3000");
+
+        socketRef.current.on("bidUpdate", (newBid) => {
+            // Only process bids for this auction
+            if (newBid.auction_id === parseInt(id)) {
+                const token = localStorage.getItem("token");
+                if (token) {
+                    try {
+                        const decoded = jwtDecode(token);
+                        const currentUserId = decoded.id;
+
+                        // Check if current user was the previous highest bidder and got outbid
+                        if (
+                            newBid.previousHighestBidder === currentUserId &&
+                            newBid.user_id !== currentUserId &&
+                            !hasBeenOutbidRef.current
+                        ) {
+                            toast.warning(`You've been outbid! New highest bid: $${newBid.amount}`, {
+                                position: "top-center",
+                                autoClose: 5000,
+                            });
+                            hasBeenOutbidRef.current = true; // Mark as notified (only once)
+                        }
+
+                        // Reset the notification flag if current user places a new bid
+                        if (newBid.user_id === currentUserId) {
+                            hasBeenOutbidRef.current = false;
+                        }
+                    } catch (error) {
+                        console.error("Error decoding token:", error);
+                    }
+                }
+
+                // Refresh auction data
+                fetchAuction();
+            }
+        });
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.off("bidUpdate");
+                socketRef.current.disconnect();
+            }
+        };
     }, [id]);
 
     const handleBidPlaced = () => {

@@ -5,6 +5,7 @@ import AuctionCard from "../components/AuctionCard";
 
 function AuctionPage() {
   const [auctions, setAuctions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchAuctions = async () => {
     try {
@@ -12,6 +13,8 @@ function AuctionPage() {
       setAuctions(response.data);
     } catch (error) {
       console.error("Error fetching auctions:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -19,10 +22,14 @@ function AuctionPage() {
     fetchAuctions();
   }, []);
 
+  if (loading) {
+    return null;
+  }
+
   if (auctions.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-state-icon">Auction</div>
+        <div className="empty-state-icon">😶 Nothing Here</div>
         <h3 className="empty-state-title">No Auctions Yet</h3>
         <p>Be the first to create an auction!</p>
       </div>

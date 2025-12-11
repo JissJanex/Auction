@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -11,11 +11,25 @@ function CreateAuction() {
     image_url: "",
     start_time: "",
     end_time: "",
-    owner_id: 1,
   });
+
+  // Check if user is logged in on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Login to create an auction");
+      navigate("/login");
+      return;
+    }
     
     // Validation
     if (!createdAuction.title.trim()) {
@@ -26,9 +40,29 @@ function CreateAuction() {
       toast.error("Please enter a description");
       return;
     }
+    if(!createdAuction.start_time) {
+      toast.error("Please select a start time");
+      return;
+    }
+    if(!createdAuction.end_time) {
+      toast.error("Please select an end time");
+      return;
+    }
+    if(new Date(createdAuction.end_time) <= new Date(createdAuction.start_time)) {
+      toast.error("End time must be after start time");
+      return;
+    }
 
     try {
-      const response = await axios.post("http://localhost:3000/auctions", createdAuction);
+      const response = await axios.post(
+        "http://localhost:3000/auctions",
+        createdAuction,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log("Auction created:", response.data);
       toast.success("Auction created successfully!");
       // Reset form
@@ -38,13 +72,18 @@ function CreateAuction() {
         image_url: "",
         start_time: "",
         end_time: "",
-        owner_id: 1,
       });
       // Navigate to home after short delay
       setTimeout(() => navigate("/"), 1500);
     } catch (error) {
       console.error("Error creating auction:", error);
-      toast.error("Failed to create auction. Please try again.");
+      if (error.response?.status === 401) {
+        toast.error("Login to create an auction");
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        toast.error("Failed to create auction. Please try again.");
+      }
     }
   };
 

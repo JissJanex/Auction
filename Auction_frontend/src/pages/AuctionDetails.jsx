@@ -122,7 +122,7 @@ function AuctionDetails() {
 
                     {/* Current Bid */}
                     <div className="auction-detail-section current-bid-section">
-                        <h3 className="section-title">Current Bid</h3>
+                        <h3 className="section-title">{auction.status === 'ended' ? "Winning Bid" : "Current Bid"}</h3>
                         <div className="current-bid-display">
                             <span className="currency">$</span>
                             <span className="bid-amount">{auction.current_bid || "0.00"}</span>

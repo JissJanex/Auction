@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import AuctionCard from "../components/AuctionCard";
 
 function AuctionPage() {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   const fetchAuctions = async () => {
     try {
@@ -20,6 +22,19 @@ function AuctionPage() {
 
   useEffect(() => {
     fetchAuctions();
+  }, []);
+
+  // Check if user is logged in to display name
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUser(decoded.name);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    }
   }, []);
 
   if (loading) {
@@ -41,9 +56,14 @@ function AuctionPage() {
       <div className="page-header-flex">
         <div className="page-header-spacer"></div>
         <div className="page-header-center">
-          <h1 className="page-title">Live Auctions</h1>
+          <h1 className="page-title">
+            {user ? `Welcome back, ${user}!` : "Live Auctions"}
+          </h1>
+
           <p className="page-subtitle">
-            Discover amazing items and place your bids
+            {user
+              ? "Start bidding on your favorite items now"
+              : "Discover amazing items and place your bids"}
           </p>
         </div>
         <div className="page-header-actions">

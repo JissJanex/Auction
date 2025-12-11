@@ -133,12 +133,22 @@ h3 {
 .navbar-logo span:last-child {
   color: var(--accent-light);
   text-shadow: 0 2px 10px rgba(214, 158, 46, 0.5);
+  font-size: 1.25em;
+  font-weight: 800;
 }
 
 .navbar-nav {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+}
+
+/* Make logo image smaller and align nicely */
+.navbar-brand img.navbar-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .nav-link {

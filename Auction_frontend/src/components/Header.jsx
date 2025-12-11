@@ -25,6 +25,7 @@ function Header({ onLogoutClick }) {
     <nav className="navbar">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
+          <img src="./public/logo.png" alt="Auction Hub Logo" className="navbar-logo" />
           <span className="navbar-logo">
             <span>Auction</span> <span>Hub</span>
           </span>

@@ -742,6 +742,112 @@ h3 {
   flex: 1;
 }
 
+/* Image Upload Styles */
+.image-upload-wrapper {
+  margin-top: var(--space-2);
+}
+
+.image-upload-label {
+  display: block;
+  cursor: pointer;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  text-align: center;
+  transition: all var(--transition-normal);
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+}
+
+.image-upload-label:hover {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent-light) 0%, rgba(214, 158, 46, 0.05) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(214, 158, 46, 0.15);
+}
+
+.image-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--gray-500);
+}
+
+.image-upload-placeholder svg {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+.image-upload-placeholder span:first-of-type {
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+  color: var(--gray-700);
+}
+
+.image-upload-hint {
+  font-size: var(--font-size-sm);
+  color: var(--gray-400);
+}
+
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.image-name {
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* DateTime Input Styles */
+.datetime-input-wrapper {
+  position: relative;
+  margin-top: var(--space-2);
+}
+
+.datetime-input {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  background: var(--white);
+  transition: all var(--transition-normal);
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.datetime-input:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.datetime-input:focus {
+  border-color: var(--accent);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(214, 158, 46, 0.1);
+}
+
+.datetime-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  filter: opacity(0.6);
+  transition: all var(--transition-fast);
+}
+
+.datetime-input::-webkit-calendar-picker-indicator:hover {
+  filter: opacity(1);
+  background: var(--accent-light);
+}
+
 /* Place Bid Component */
 .bid-container {
   background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);

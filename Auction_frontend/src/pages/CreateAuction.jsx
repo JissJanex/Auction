@@ -24,15 +24,19 @@ function CreateAuction() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Login to create an auction");
       navigate("/login");
       return;
     }
-    
+
     // Validation
+    if (!createdAuction.image) {
+      toast.error("Please select an image");
+      return;
+    }
     if (!createdAuction.title.trim()) {
       toast.error("Please enter a title");
       return;
@@ -41,26 +45,37 @@ function CreateAuction() {
       toast.error("Please enter a description");
       return;
     }
-    if(!createdAuction.start_time) {
+    if (!createdAuction.start_time) {
       toast.error("Please select a start time");
       return;
     }
-    if(!createdAuction.end_time) {
+    if (!createdAuction.end_time) {
       toast.error("Please select an end time");
       return;
     }
-    if(new Date(createdAuction.end_time) <= new Date(createdAuction.start_time)) {
+    if (
+      new Date(createdAuction.end_time) <= new Date(createdAuction.start_time)
+    ) {
       toast.error("End time must be after start time");
       return;
     }
 
+    // Prepare form data for file upload
+    const formData = new FormData();
+    formData.append("title", createdAuction.title);
+    formData.append("description", createdAuction.description);
+    formData.append("start_time", createdAuction.start_time);
+    formData.append("end_time", createdAuction.end_time);
+    formData.append("image", createdAuction.image);
+
     try {
       const response = await axios.post(
         `${API_BASE_URL}/auctions`,
-        createdAuction,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -70,12 +85,11 @@ function CreateAuction() {
       setCreatedAuction({
         title: "",
         description: "",
-        image_url: "",
+        image: null,
         start_time: "",
         end_time: "",
       });
-      // Navigate to home after short delay
-      setTimeout(() => navigate("/"), 1500);
+      navigate("/");
     } catch (error) {
       console.error("Error creating auction:", error);
       if (error.response?.status === 401) {
@@ -106,7 +120,9 @@ function CreateAuction() {
               className="input"
               type="text"
               value={createdAuction.title}
-              onChange={(e) => setCreatedAuction({ ...createdAuction, title: e.target.value })}
+              onChange={(e) =>
+                setCreatedAuction({ ...createdAuction, title: e.target.value })
+              }
               placeholder="Enter a catchy title for your item"
             />
           </div>
@@ -119,7 +135,12 @@ function CreateAuction() {
               id="description"
               className="input"
               value={createdAuction.description}
-              onChange={(e) => setCreatedAuction({ ...createdAuction, description: e.target.value })}
+              onChange={(e) =>
+                setCreatedAuction({
+                  ...createdAuction,
+                  description: e.target.value,
+                })
+              }
               placeholder="Describe your item in detail..."
               rows={4}
               style={{ resize: "vertical" }}
@@ -127,57 +148,96 @@ function CreateAuction() {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="image_url">
-              🖼️ Image URL
+            <label className="input-label" htmlFor="image">
+              🖼️ Auction Image
             </label>
-            <input
-              id="image_url"
-              className="input"
-              type="text"
-              value={createdAuction.image_url}
-              onChange={(e) => setCreatedAuction({ ...createdAuction, image_url: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-            />
+            <div className="image-upload-wrapper">
+              <input
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setCreatedAuction({
+                    ...createdAuction,
+                    image: e.target.files[0],
+                  })
+                }
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="image" className="image-upload-label">
+                {createdAuction.image ? (
+                  <div className="image-preview">
+                    <img 
+                      src={URL.createObjectURL(createdAuction.image)} 
+                      alt="Preview" 
+                      style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }}
+                    />
+                    <span className="image-name">{createdAuction.image.name}</span>
+                  </div>
+                ) : (
+                  <div className="image-upload-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span>Click to upload image</span>
+                    <span className="image-upload-hint">PNG, JPG, GIF up to 10MB</span>
+                  </div>
+                )}
+              </label>
+            </div>
           </div>
 
           <div className="input-group">
             <label className="input-label" htmlFor="start_time">
               🕐 Start Time
             </label>
-            <input
-              id="start_time"
-              className="input"
-              type="datetime-local"
-              value={createdAuction.start_time}
-              onChange={(e) => setCreatedAuction({ ...createdAuction, start_time: e.target.value })}
-            />
+            <div className="datetime-input-wrapper">
+              <input
+                id="start_time"
+                className="input datetime-input"
+                type="datetime-local"
+                value={createdAuction.start_time}
+                onChange={(e) =>
+                  setCreatedAuction({
+                    ...createdAuction,
+                    start_time: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
 
           <div className="input-group">
             <label className="input-label" htmlFor="end_time">
-              End Time
+              ⏰ End Time
             </label>
-            <input
-              id="end_time"
-              className="input"
-              type="datetime-local"
-              value={createdAuction.end_time}
-              onChange={(e) => setCreatedAuction({ ...createdAuction, end_time: e.target.value })}
-            />
+            <div className="datetime-input-wrapper">
+              <input
+                id="end_time"
+                className="input datetime-input"
+                type="datetime-local"
+                value={createdAuction.end_time}
+                onChange={(e) =>
+                  setCreatedAuction({
+                    ...createdAuction,
+                    end_time: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
 
           <div className="form-actions">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-outline"
               onClick={() => navigate("/")}
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              className="btn btn-accent btn-lg"
-            >
+            <button type="submit" className="btn btn-accent btn-lg">
               Create Auction
             </button>
           </div>

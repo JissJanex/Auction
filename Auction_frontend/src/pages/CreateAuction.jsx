@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -8,7 +9,7 @@ function CreateAuction() {
   const [createdAuction, setCreatedAuction] = useState({
     title: "",
     description: "",
-    image_url: "",
+    image: null,
     start_time: "",
     end_time: "",
   });
@@ -55,7 +56,7 @@ function CreateAuction() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/auctions",
+        `${API_BASE_URL}/auctions`,
         createdAuction,
         {
           headers: {

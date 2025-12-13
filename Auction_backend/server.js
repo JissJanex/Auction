@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -6,8 +7,11 @@ import auctionRoutes from './routes/auction.js';
 import bidRoutes, { placeBid } from './routes/bid.js';
 import auth from './routes/auth.js';
 
+const FRONTEND_URL = process.env.FRONTEND_URL || '*';
+const PORT = process.env.PORT || 3000;
+
 const app = express();
-app.use(cors());
+app.use(cors({ origin: FRONTEND_URL === '*' ? '*' : [FRONTEND_URL], credentials: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -23,7 +27,7 @@ app.use('/auth', auth);
 //Web socket setup
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" } // Replace with frontend URL at production
+  cors: { origin: FRONTEND_URL === '*' ? '*' : [FRONTEND_URL] }
 });
 
 
@@ -48,6 +52,6 @@ io.on("connection", (socket) => {
 });
 
 // Start the HTTP server (used by both Express and Socket.IO)
-server.listen(3000, () => {
-  console.log("Server is running on port 3000");
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

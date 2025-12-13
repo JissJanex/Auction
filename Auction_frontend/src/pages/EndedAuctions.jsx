@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 import AuctionCard from "../components/AuctionCard";
 import { Link } from "react-router-dom";
 
@@ -9,7 +10,7 @@ function EndedAuctions() {
 
     const fetchAuctions = async () => {
         try {
-            const response = await axios.get("http://localhost:3000/auctions/ended");
+            const response = await axios.get(`${API_BASE_URL}/auctions/ended`);
             setEndedAuctions(response.data);
         } catch (error) {
             console.error("Error fetching auctions:", error);

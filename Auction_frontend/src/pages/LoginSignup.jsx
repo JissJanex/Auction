@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 import { Link, useNavigate } from "react-router-dom";
 
 function LoginSignup() {
@@ -23,7 +24,7 @@ function LoginSignup() {
     setErrorMessage("");
     try {
       if (isLogin) {
-        const response = await axios.post("http://localhost:3000/auth/login", {
+        const response = await axios.post(`${API_BASE_URL}/auth/login`, {
           email: formData.email,
           password: formData.password,
         });
@@ -31,7 +32,7 @@ function LoginSignup() {
         window.dispatchEvent(new Event('authChange'));
         navigate("/");
       } else {
-        const response = await axios.post("http://localhost:3000/auth/signup", {
+        const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
           name: formData.name,
           email: formData.email,
           password: formData.password,

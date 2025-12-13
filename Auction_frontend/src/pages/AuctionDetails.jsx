@@ -5,6 +5,8 @@ import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import PlaceBid from "../components/PlaceBid";
+import WinnerModal from "../components/WinnerModal";
+import { API_BASE_URL, SOCKET_URL } from "../config";
 
 function AuctionDetails() {
     const [auction, setAuction] = useState(null);
@@ -19,7 +21,7 @@ function AuctionDetails() {
 
     const fetchAuction = async () => {
         try {
-            const res = await axios.get(`http://localhost:3000/auctions/${id}`);
+            const res = await axios.get(`${API_BASE_URL}/auctions/${id}`);
             setAuction(res.data);
         } catch (error) {
             console.error("Error fetching auction details:", error);
@@ -34,7 +36,7 @@ function AuctionDetails() {
 
     // Socket.IO connection for real-time bid updates
     useEffect(() => {
-        socketRef.current = io("http://localhost:3000");
+        socketRef.current = io(SOCKET_URL);
 
         socketRef.current.on("bidUpdate", (newBid) => {
             // Only process bids for this auction
@@ -80,6 +82,9 @@ function AuctionDetails() {
         };
     }, [id]);
 
+    const [showWinnerModal, setShowWinnerModal] = useState(false);
+    const [winnerInfo, setWinnerInfo] = useState(null);
+
     const handleBidPlaced = () => {
         fetchAuction();
     };
@@ -112,6 +117,51 @@ function AuctionDetails() {
         }, 1000);
 
         return () => clearInterval(interval);
+    }, [auction, currentStatus]);
+
+    const winnerLoadedRef = useRef(false); // To load winner info only once
+    // When auction ends, fetch highest bid and show winner modal once
+    useEffect(() => {
+        if (!auction) return;
+        if (currentStatus !== 'ended') return;
+
+        // Only show modal if not already shown
+        if (showWinnerModal) return;
+
+        const loadWinner = async () => {
+            try {
+                const res = await axios.get(`${API_BASE_URL}/bids?auction_id=${auction.id}`);
+                const bids = res.data;
+                if (!bids || bids.length === 0) {
+                    const token = localStorage.getItem('token');
+                    const role = token ? (jwtDecode(token).id === auction.owner_id ? 'owner' : 'loser') : 'loser';
+                    setWinnerInfo({ role, winnerName: null, winningBid: auction.current_bid || null });
+                } else {
+                    const top = bids[0]; // ordered by amount desc
+                    const winnerName = top.user_name || null;
+                    const winningBid = top.amount;
+                    const token = localStorage.getItem('token');
+                    let role = 'loser';
+                    if (token) {
+                        try {
+                            const decoded = jwtDecode(token);
+                            const currentUserId = decoded.id;
+                            if (currentUserId === auction.owner_id) role = 'owner';
+                            else if (currentUserId === top.user_id) role = 'winner';
+                        } catch (err) {
+                            // ignore
+                        }
+                    }
+                    setWinnerInfo({ role, winnerName, winningBid });
+                }
+                setShowWinnerModal(true);
+                winnerLoadedRef.current = true;
+            } catch (err) {
+                console.error('Failed to load winner info', err);
+            }
+        };
+
+        loadWinner();
     }, [auction, currentStatus]);
 
     //Function to calculate time remaining for auction to start or end
@@ -263,6 +313,7 @@ function AuctionDetails() {
                     )}
                 </div>
             </div>
+                    <WinnerModal isOpen={showWinnerModal} onClose={() => setShowWinnerModal(false)} winner={winnerInfo} />
         </div>
     );
 }

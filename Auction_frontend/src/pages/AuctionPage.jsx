@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { API_BASE_URL } from "../config";
 import AuctionCard from "../components/AuctionCard";
 
 function AuctionPage() {
@@ -11,7 +12,7 @@ function AuctionPage() {
 
   const fetchAuctions = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auctions");
+      const response = await axios.get(`${API_BASE_URL}/auctions`);
       setAuctions(response.data);
     } catch (error) {
       console.error("Error fetching auctions:", error);

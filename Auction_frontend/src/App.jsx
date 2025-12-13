@@ -14,8 +14,6 @@ import Login from "./pages/LoginSignup";
 function App() {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const now = new Date();
-  console.log(now);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);

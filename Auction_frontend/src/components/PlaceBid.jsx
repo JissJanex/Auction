@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { SOCKET_URL } from "../config";
 
 export default function PlaceBid({ auction, onBidPlaced } = {}) {
   const [bid, setBid] = useState("");
@@ -12,7 +13,7 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000");
+    socketRef.current = io(SOCKET_URL);
 
     // Listen for new bids from server
     socketRef.current.on("bidUpdate", (newBid) => {

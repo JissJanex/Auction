@@ -1,5 +1,6 @@
 import express from "express";
 import { db } from "../conf/db.js";
+import upload from "../middleware/upload.js";
 import auth from "../middleware/auth.js";
 
 const router = express.Router();
@@ -40,19 +41,26 @@ router.get("/:id", async (req, res) => {
 });
 
 // Insert a new auction
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, upload.single("image"), async (req, res) => {
   const owner_id = req.user.id;
-  const { title, description, image_url, start_time, end_time } = req.body;
+  const { title, description, start_time, end_time } = req.body;
 
-  const q = await db.query(
-    `INSERT INTO auctions
-     (title, description, image_url, start_time, end_time, owner_id)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     RETURNING *`,
-    [title, description, image_url, start_time, end_time, owner_id]
-  );
+  const image_url = req.file.path; // Cloudinary URL
 
-  res.json(q.rows[0]);
+  try {
+    const result = await db.query(
+      `INSERT INTO auctions
+       (title, description, image_url, start_time, end_time, owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING *`,
+      [title, description, image_url, start_time, end_time, owner_id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create auction" });
+  }
 });
 
 export default router;

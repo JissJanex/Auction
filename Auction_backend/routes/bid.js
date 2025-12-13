@@ -4,6 +4,27 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
+// Get bids for an auction to display winner
+router.get('/', async (req, res) => {
+  try {
+    const { auction_id } = req.query;
+    if (!auction_id) return res.status(400).json({ error: 'auction_id required' });
+
+    const result = await db.query(
+      `SELECT b.*, u.name as user_name
+       FROM bids b
+       LEFT JOIN users u ON b.user_id = u.id
+       WHERE b.auction_id = $1
+       ORDER BY b.amount DESC, b.id ASC`,
+      [auction_id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bids' });
+  }
+});
+
 // Helper function to check and update the bid in the database (used by both HTTP and WebSocket)
 export async function placeBid(auction_id, user_id, amount) {
   // Checking if owner is bidding on own auction

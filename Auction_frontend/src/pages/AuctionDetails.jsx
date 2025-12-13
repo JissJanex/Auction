@@ -9,6 +9,8 @@ import PlaceBid from "../components/PlaceBid";
 function AuctionDetails() {
     const [auction, setAuction] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [currentStatus, setCurrentStatus] = useState(null);
+    const [timeRemaining, setTimeRemaining] = useState("");
     const socketRef = useRef(null);
     const hasBeenOutbidRef = useRef(false); // Track if user has been notified about being outbid
 
@@ -82,23 +84,85 @@ function AuctionDetails() {
         fetchAuction();
     };
 
-    
-
-    const getTimeRemaining = (endTime) => {
+    // Calculate auction status dynamically based on times
+    const getAuctionStatus = () => {
+        if (!auction) return null;
         const now = new Date();
+        const startTime = new Date(auction.start_time);
+        const endTime = new Date(auction.end_time);
+
+        if (now < startTime) return 'upcoming';
+        if (now > endTime) return 'ended';
+        return 'active';
+    };
+
+    // Update status dynamically - recalculate every second
+    useEffect(() => {
+        if (!auction) return;
+
+        // Initial status calculation
+        setCurrentStatus(getAuctionStatus());
+
+        // Update status every second to catch transitions
+        const interval = setInterval(() => {
+            const newStatus = getAuctionStatus();
+            if (newStatus !== currentStatus) {
+                setCurrentStatus(newStatus);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [auction, currentStatus]);
+
+    //Function to calculate time remaining for auction to start or end
+    const getTimeRemaining = (endTime, startTime) => {
+        const now = new Date();
+        const start = new Date(startTime);
         const end = new Date(endTime);
         const diff = end - now;
+        const diffToStart = start - now;
+
+        const toParts = (milliseconds) => {
+            const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+            const days = Math.floor(totalSeconds / (24 * 3600));
+            const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return { days, hours, minutes, seconds };
+        };
+
+        // If auction hasn't started yet
+        if (diffToStart > 0) {
+            const { days, hours, minutes, seconds } = toParts(diffToStart);
+            if (days > 0) return `Starts in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+            if (hours > 0) return `Starts in ${hours}h ${minutes}m ${seconds}s`;
+            if (minutes > 0) return `Starts in ${minutes}m ${seconds}s`;
+            return `Starts in ${seconds}s`;
+        }
 
         if (diff <= 0) return "Auction ended";
 
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
+        const { days, hours, minutes, seconds } = toParts(diff);
+        if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
     };
+
+    // Update time remaining automatically every second
+    useEffect(() => {
+        if (!auction) return;
+
+        // Initial calculation
+        setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
+
+        // Update every second
+        const interval = setInterval(() => {
+            setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [auction]);
 
     if (loading) {
         return null;
@@ -167,7 +231,7 @@ function AuctionDetails() {
                             <div className="time-info-card highlight">
                                 <span className="time-label">Time Remaining</span>
                                 <span className="time-value countdown">
-                                    {getTimeRemaining(auction.end_time)}
+                                    {timeRemaining}
                                 </span>
                             </div>
                         </div>
@@ -175,7 +239,7 @@ function AuctionDetails() {
 
                     {/* Current Bid */}
                     <div className="auction-detail-section current-bid-section">
-                        <h3 className="section-title">{auction.status === 'ended' ? "Winning Bid" : "Current Bid"}</h3>
+                        <h3 className="section-title">{currentStatus === 'ended' ? "Winning Bid" : "Current Bid"}</h3>
                         <div className="current-bid-display">
                             <span className="currency">$</span>
                             <span className="bid-amount">{auction.current_bid || "0.00"}</span>
@@ -183,7 +247,7 @@ function AuctionDetails() {
                     </div>
 
                     {/* Place Bid Section */}
-                    {auction.status === 'active' ? (
+                    {currentStatus === 'active' ? (
                         <div className="auction-detail-section bid-section">
                             <h3 className="section-title">Place Your Bid</h3>
                             <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
@@ -191,7 +255,7 @@ function AuctionDetails() {
                     ) : (
                         <div className="auction-detail-section">
                             <div className="auction-closed-message">
-                                {auction.status === 'closed' || auction.status === 'ended'
+                                {currentStatus === 'ended'
                                     ? 'This auction has ended'
                                     : `Auction starts at ${new Date(auction.start_time).toLocaleString()}`}
                             </div>

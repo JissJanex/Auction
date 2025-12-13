@@ -14,6 +14,8 @@ import Login from "./pages/LoginSignup";
 function App() {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const now = new Date();
+  console.log(now);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -24,7 +26,7 @@ function App() {
     setShowLogoutModal(false);
     navigate("/");
     // Notify components about auth state change
-    window.dispatchEvent(new Event('authChange'));
+    window.dispatchEvent(new Event("authChange"));
   };
 
   const handleCancelLogout = () => {
@@ -48,7 +50,7 @@ function App() {
 
       <Footer />
 
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -61,7 +63,7 @@ function App() {
         theme="colored"
       />
 
-      <LogoutModal 
+      <LogoutModal
         isOpen={showLogoutModal}
         onConfirm={handleConfirmLogout}
         onCancel={handleCancelLogout}

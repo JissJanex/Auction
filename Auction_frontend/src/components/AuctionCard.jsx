@@ -1,6 +1,33 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 function AuctionCard({ auction }) {
+  const [currentStatus, setCurrentStatus] = useState('upcoming');
+
+  // Calculate status dynamically based on start_time and end_time
+  const getAuctionStatus = () => {
+    const now = new Date();
+    const startTime = new Date(auction.start_time);
+    const endTime = new Date(auction.end_time);
+
+    if (now < startTime) return 'upcoming';
+    if (now > endTime) return 'ended';
+    return 'active';
+  };
+
+  // Update status dynamically - recalculate every second
+  useEffect(() => {
+    // Initial status
+    setCurrentStatus(getAuctionStatus());
+
+    // Update every second to catch status transitions
+    const interval = setInterval(() => {
+      setCurrentStatus(getAuctionStatus());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [auction.start_time, auction.end_time]);
+
   const getStatusBadge = (status) => {
     const statusMap = {
       active: { class: "badge-active", label: "Active" },
@@ -12,9 +39,9 @@ function AuctionCard({ auction }) {
 
   return (
     <article className={`auction-card`}>
-      {auction.status !== 'ended' && (
+      {currentStatus !== 'ended' && (
         <div className="auction-card-status">
-          {getStatusBadge(auction.status)}
+          {getStatusBadge(currentStatus)}
         </div>
       )}
       {auction.image_url ? (

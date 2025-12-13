@@ -12,6 +12,15 @@ export async function placeBid(auction_id, user_id, amount) {
     throw new Error("Owner cannot place a bid on their own auction");
   }
 
+  // Check if auction is still active
+  const auctionCheck = await db.query(
+    `SELECT end_time FROM auctions WHERE id=$1 AND end_time > NOW()`,
+    [auction_id]
+  );
+  if (auctionCheck.rows.length === 0) {
+    throw new Error("This auction has ended and is no longer accepting bids");
+  }
+
   // Get the previous highest bidder (if exists)
   const previousBidResult = await db.query(
     `SELECT user_id FROM bids WHERE auction_id=$1 ORDER BY amount DESC LIMIT 1`,

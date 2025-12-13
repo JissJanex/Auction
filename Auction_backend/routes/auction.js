@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all active or upcoming auctions
 router.get("/", async (req, res) => {
   try {
-    console.log("db");
+    console.log(db);
     const result = await db.query(`
       SELECT * FROM auctions
       WHERE end_time > NOW()

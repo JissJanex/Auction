@@ -13,6 +13,8 @@ function CreateAuction() {
     start_time: "",
     end_time: "",
   });
+  //To prevent multiple submissions while creating an auction
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check if user is logged in on mount
   useEffect(() => {
@@ -25,6 +27,10 @@ function CreateAuction() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Login to create an auction");
@@ -35,28 +41,34 @@ function CreateAuction() {
     // Validation
     if (!createdAuction.image) {
       toast.error("Please select an image");
+      setIsSubmitting(false);
       return;
     }
     if (!createdAuction.title.trim()) {
       toast.error("Please enter a title");
+      setIsSubmitting(false);
       return;
     }
     if (!createdAuction.description.trim()) {
       toast.error("Please enter a description");
+      setIsSubmitting(false);
       return;
     }
     if (!createdAuction.start_time) {
       toast.error("Please select a start time");
+      setIsSubmitting(false);
       return;
     }
     if (!createdAuction.end_time) {
       toast.error("Please select an end time");
+      setIsSubmitting(false);
       return;
     }
     if (
       new Date(createdAuction.end_time) <= new Date(createdAuction.start_time)
     ) {
       toast.error("End time must be after start time");
+      setIsSubmitting(false);
       return;
     }
 
@@ -99,6 +111,7 @@ function CreateAuction() {
       } else {
         toast.error("Failed to create auction. Please try again.");
       }
+      setIsSubmitting(false);
     }
   };
 
@@ -237,8 +250,8 @@ function CreateAuction() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-accent btn-lg">
-              Create Auction
+            <button type="submit" className="btn btn-accent btn-lg" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Auction"}
             </button>
           </div>
         </form>

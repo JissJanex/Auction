@@ -7,7 +7,6 @@ const { Pool } = pkg;
 export const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  family: 4,
 });
 
 db.query("SELECT 1")

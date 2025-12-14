@@ -48,12 +48,16 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
   const image_url = req.file.path; // Cloudinary URL
 
   try {
+    // Convert start_time and end_time to UTC format
+    const startUTC = new Date(start_time).toISOString();
+    const endUTC = new Date(end_time).toISOString();
+
     const result = await db.query(
       `INSERT INTO auctions
        (title, description, image_url, start_time, end_time, owner_id)
        VALUES ($1,$2,$3,$4,$5,$6)
        RETURNING *`,
-      [title, description, image_url, start_time, end_time, owner_id]
+      [title, description, image_url, startUTC, endUTC, owner_id]
     );
 
     res.json(result.rows[0]);

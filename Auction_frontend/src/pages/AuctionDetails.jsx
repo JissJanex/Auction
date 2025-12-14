@@ -80,7 +80,7 @@ function AuctionDetails() {
                 socketRef.current.disconnect();
             }
         };
-    }, [id]);
+    }, []);
 
     const [showWinnerModal, setShowWinnerModal] = useState(false);
     const [winnerInfo, setWinnerInfo] = useState(null);

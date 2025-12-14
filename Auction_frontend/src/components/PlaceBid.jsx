@@ -36,7 +36,7 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
       socketRef.current.off("bidError");
       socketRef.current.disconnect();
     };
-  }, [auction.id, onBidPlaced]);
+  }, []);
 
   const handleBid = async () => {
     // Validate auction prop

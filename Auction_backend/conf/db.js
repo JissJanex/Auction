@@ -4,9 +4,13 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
+db.query("SELECT 1")
+  .then(() => console.log("DB connected"))
+  .catch(err => console.error("DB connection error:", err));
+
 
 export const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
+  family: 4,
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -9,313 +9,345 @@ import WinnerModal from "../components/WinnerModal";
 import { API_BASE_URL, SOCKET_URL } from "../config";
 
 function AuctionDetails() {
-    const [auction, setAuction] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [currentStatus, setCurrentStatus] = useState(null);
-    const [timeRemaining, setTimeRemaining] = useState("");
-    const socketRef = useRef(null);
-    const hasBeenOutbidRef = useRef(false); // Track if user has been notified about being outbid
+  const [auction, setAuction] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState("");
+  const socketRef = useRef(null);
+  const hasBeenOutbidRef = useRef(false); // Track if user has been notified about being outbid
 
-    //To fetch the auction id from the url
-    const { id } = useParams();
+  //To fetch the auction id from the url
+  const { id } = useParams();
 
-    const fetchAuction = async () => {
-        try {
-            const res = await axios.get(`${API_BASE_URL}/auctions/${id}`);
-            setAuction(res.data);
-        } catch (error) {
-            console.error("Error fetching auction details:", error);
-        } finally {
-            setLoading(false);
-        }
+  const fetchAuction = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/auctions/${id}`);
+      setAuction(res.data);
+    } catch (error) {
+      console.error("Error fetching auction details:", error);
+    } finally {
+      setLoading(false);
     }
+  }, [id]);
 
-    useEffect(() => {
-        fetchAuction();
-    }, [id]);
+  useEffect(() => {
+    fetchAuction();
+  }, [id]);
 
-    // Socket.IO connection for real-time bid updates
-    useEffect(() => {
-        socketRef.current = io(SOCKET_URL);
+  // Socket.IO connection for real-time bid updates
+  useEffect(() => {
+    // Create new socket connection
+    socketRef.current = io(SOCKET_URL);
 
-        socketRef.current.on("bidUpdate", (newBid) => {
-            // Only process bids for this auction
-            if (newBid.auction_id === parseInt(id)) {
-                const token = localStorage.getItem("token");
-                if (token) {
-                    try {
-                        const decoded = jwtDecode(token);
-                        const currentUserId = decoded.id;
+    socketRef.current.on("bidUpdate", (newBid) => {
+      // Only process bids for this auction
+      if (newBid.auction_id === parseInt(id)) {
+        const token = localStorage.getItem("token");
+        if (token) {
+          try {
+            const decoded = jwtDecode(token);
+            const currentUserId = decoded.id;
 
-                        // Check if current user was the previous highest bidder and got outbid
-                        if (
-                            newBid.previousHighestBidder === currentUserId &&
-                            newBid.user_id !== currentUserId &&
-                            !hasBeenOutbidRef.current
-                        ) {
-                            toast.warning(`You've been outbid! New highest bid: $${newBid.amount}`, {
-                                position: "top-center",
-                                autoClose: 5000,
-                            });
-                            hasBeenOutbidRef.current = true; // Mark as notified (only once)
-                        }
-
-                        // Reset the notification flag if current user places a new bid
-                        if (newBid.user_id === currentUserId) {
-                            hasBeenOutbidRef.current = false;
-                        }
-                    } catch (error) {
-                        console.error("Error decoding token:", error);
-                    }
+            // Check if current user was the previous highest bidder and got outbid
+            if (
+              newBid.previousHighestBidder === currentUserId &&
+              newBid.user_id !== currentUserId &&
+              !hasBeenOutbidRef.current
+            ) {
+              toast.warning(
+                `You've been outbid! New highest bid: $${newBid.amount}`,
+                {
+                  position: "top-center",
+                  autoClose: 5000,
                 }
-
-                // Refresh auction data
-                fetchAuction();
+              );
+              hasBeenOutbidRef.current = true; // Mark as notified (only once)
             }
-        });
 
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.off("bidUpdate");
-                socketRef.current.disconnect();
+            // Reset the notification flag if current user places a new bid
+            if (newBid.user_id === currentUserId) {
+              hasBeenOutbidRef.current = false;
             }
-        };
-    }, []);
-
-    const [showWinnerModal, setShowWinnerModal] = useState(false);
-    const [winnerInfo, setWinnerInfo] = useState(null);
-
-    const handleBidPlaced = () => {
-        fetchAuction();
-    };
-
-    // Calculate auction status dynamically based on times
-    const getAuctionStatus = () => {
-        if (!auction) return null;
-        const now = new Date();
-        const startTime = new Date(auction.start_time);
-        const endTime = new Date(auction.end_time);
-
-        if (now < startTime) return 'upcoming';
-        if (now > endTime) return 'ended';
-        return 'active';
-    };
-
-    // Update status dynamically - recalculate every second
-    useEffect(() => {
-        if (!auction) return;
-
-        // Initial status calculation
-        setCurrentStatus(getAuctionStatus());
-
-        // Update status every second to catch transitions
-        const interval = setInterval(() => {
-            const newStatus = getAuctionStatus();
-            if (newStatus !== currentStatus) {
-                setCurrentStatus(newStatus);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [auction, currentStatus]);
-
-    const winnerLoadedRef = useRef(false); // To load winner info only once
-    // When auction ends, fetch highest bid and show winner modal once
-    useEffect(() => {
-        if (!auction) return;
-        if (currentStatus !== 'ended') return;
-
-        // Only show modal if not already shown
-        if (showWinnerModal) return;
-
-        const loadWinner = async () => {
-            try {
-                const res = await axios.get(`${API_BASE_URL}/bids?auction_id=${auction.id}`);
-                const bids = res.data;
-                if (!bids || bids.length === 0) {
-                    const token = localStorage.getItem('token');
-                    const role = token ? (jwtDecode(token).id === auction.owner_id ? 'owner' : 'loser') : 'loser';
-                    setWinnerInfo({ role, winnerName: null, winningBid: auction.current_bid || null });
-                } else {
-                    const top = bids[0]; // ordered by amount desc
-                    const winnerName = top.user_name || null;
-                    const winningBid = top.amount;
-                    const token = localStorage.getItem('token');
-                    let role = 'loser';
-                    if (token) {
-                        try {
-                            const decoded = jwtDecode(token);
-                            const currentUserId = decoded.id;
-                            if (currentUserId === auction.owner_id) role = 'owner';
-                            else if (currentUserId === top.user_id) role = 'winner';
-                        } catch (err) {
-                            // ignore
-                        }
-                    }
-                    setWinnerInfo({ role, winnerName, winningBid });
-                }
-                setShowWinnerModal(true);
-                winnerLoadedRef.current = true;
-            } catch (err) {
-                console.error('Failed to load winner info', err);
-            }
-        };
-
-        loadWinner();
-    }, [auction, currentStatus]);
-
-    //Function to calculate time remaining for auction to start or end
-    const getTimeRemaining = (endTime, startTime) => {
-        const now = new Date();
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        const diff = end - now;
-        const diffToStart = start - now;
-
-        const toParts = (milliseconds) => {
-            const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-            const days = Math.floor(totalSeconds / (24 * 3600));
-            const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            return { days, hours, minutes, seconds };
-        };
-
-        // If auction hasn't started yet
-        if (diffToStart > 0) {
-            const { days, hours, minutes, seconds } = toParts(diffToStart);
-            if (days > 0) return `Starts in ${days}d ${hours}h ${minutes}m ${seconds}s`;
-            if (hours > 0) return `Starts in ${hours}h ${minutes}m ${seconds}s`;
-            if (minutes > 0) return `Starts in ${minutes}m ${seconds}s`;
-            return `Starts in ${seconds}s`;
+          } catch (error) {
+            console.error("Error decoding token:", error);
+          }
         }
 
-        if (diff <= 0) return "Auction ended";
+        // Refresh auction data
+        fetchAuction();
+      }
+    });
 
-        const { days, hours, minutes, seconds } = toParts(diff);
-        if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-        if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-        if (minutes > 0) return `${minutes}m ${seconds}s`;
-        return `${seconds}s`;
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("bidUpdate");
+        socketRef.current.disconnect();
+      }
     };
+  }, [id, fetchAuction]);
 
-    // Update time remaining automatically every second
-    useEffect(() => {
-        if (!auction) return;
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [winnerInfo, setWinnerInfo] = useState(null);
 
-        // Initial calculation
-        setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
+  const handleBidPlaced = () => {
+    fetchAuction();
+  };
 
-        // Update every second
-        const interval = setInterval(() => {
-            setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
-        }, 1000);
+  // Calculate auction status dynamically based on times
+  const getAuctionStatus = () => {
+    if (!auction) return null;
+    const now = new Date();
+    const startTime = new Date(auction.start_time);
+    const endTime = new Date(auction.end_time);
 
-        return () => clearInterval(interval);
-    }, [auction]);
+    if (now < startTime) return "upcoming";
+    if (now > endTime) return "ended";
+    return "active";
+  };
 
-    if (loading) {
-        return null;
-    }
+  // Update status dynamically - recalculate every second
+  useEffect(() => {
+    if (!auction) return;
 
-    if (!auction) {
-        return (
-            <div className="empty-state">
-                <div className="empty-state-icon">📦</div>
-                <h3 className="empty-state-title">No item found.</h3>
-            </div>
+    // Initial status calculation
+    setCurrentStatus(getAuctionStatus());
+
+    // Update status every second to catch transitions
+    const interval = setInterval(() => {
+      const newStatus = getAuctionStatus();
+      if (newStatus !== currentStatus) {
+        setCurrentStatus(newStatus);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [auction, currentStatus]);
+
+  const winnerLoadedRef = useRef(false); // To load winner info only once
+  // When auction ends, fetch highest bid and show winner modal once
+  useEffect(() => {
+    if (!auction) return;
+    if (currentStatus !== "ended") return;
+
+    // Only show modal if not already shown
+    if (showWinnerModal) return;
+
+    const loadWinner = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/bids?auction_id=${auction.id}`
         );
+        const bids = res.data;
+        if (!bids || bids.length === 0) {
+          const token = localStorage.getItem("token");
+          const role = token
+            ? jwtDecode(token).id === auction.owner_id
+              ? "owner"
+              : "loser"
+            : "loser";
+          setWinnerInfo({
+            role,
+            winnerName: null,
+            winningBid: auction.current_bid || null,
+          });
+        } else {
+          const top = bids[0]; // ordered by amount desc
+          const winnerName = top.user_name || null;
+          const winningBid = top.amount;
+          const token = localStorage.getItem("token");
+          let role = "loser";
+          if (token) {
+            try {
+              const decoded = jwtDecode(token);
+              const currentUserId = decoded.id;
+              if (currentUserId === auction.owner_id) role = "owner";
+              else if (currentUserId === top.user_id) role = "winner";
+            } catch (err) {
+              // ignore
+            }
+          }
+          setWinnerInfo({ role, winnerName, winningBid });
+        }
+        setShowWinnerModal(true);
+        winnerLoadedRef.current = true;
+      } catch (err) {
+        console.error("Failed to load winner info", err);
+      }
+    };
+
+    loadWinner();
+  }, [auction, currentStatus]);
+
+  //Function to calculate time remaining for auction to start or end
+  const getTimeRemaining = (endTime, startTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diff = end - now;
+    const diffToStart = start - now;
+
+    const toParts = (milliseconds) => {
+      const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+      const days = Math.floor(totalSeconds / (24 * 3600));
+      const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return { days, hours, minutes, seconds };
+    };
+
+    // If auction hasn't started yet
+    if (diffToStart > 0) {
+      const { days, hours, minutes, seconds } = toParts(diffToStart);
+      if (days > 0)
+        return `Starts in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+      if (hours > 0) return `Starts in ${hours}h ${minutes}m ${seconds}s`;
+      if (minutes > 0) return `Starts in ${minutes}m ${seconds}s`;
+      return `Starts in ${seconds}s`;
     }
 
+    if (diff <= 0) return "Auction ended";
+
+    const { days, hours, minutes, seconds } = toParts(diff);
+    if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
+  // Update time remaining automatically every second
+  useEffect(() => {
+    if (!auction) return;
+
+    // Initial calculation
+    setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
+
+    // Update every second
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(auction.end_time, auction.start_time));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [auction]);
+
+  if (loading) {
     return (
-        <div className="auction-details-container">
-            <Link to="/" className="btn btn-outline btn-back">
-                ← Back to Auctions
-            </Link>
-
-            <div className="auction-details-grid">
-                {/* Left Column - Image and Gallery */}
-                <div className="auction-image-section">
-                    {auction.image_url ? (
-                        <img
-                            src={auction.image_url}
-                            alt={auction.title}
-                            className="auction-detail-image"
-                        />
-                    ) : (
-                        <div className="auction-detail-placeholder">No Image Available</div>
-                    )}
-                </div>
-
-                {/* Right Column - Details and Bidding */}
-                <div className="auction-info-section">
-                    {/* Header with Status */}
-                    <div className="auction-detail-header">
-                        <div>
-                            <h1 className="auction-detail-title">{auction.title}</h1>                            
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="auction-detail-section">
-                        <h3 className="section-title">Description</h3>
-                        <p className="auction-detail-description">{auction.description}</p>
-                    </div>
-
-                    {/* Time Information */}
-                    <div className="auction-detail-section">
-                        <h3 className="section-title">Auction Timeline</h3>
-                        <div className="time-info-grid">
-                            <div className="time-info-card">
-                                <span className="time-label">Start Time</span>
-                                <span className="time-value">
-                                    {new Date(auction.start_time).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="time-info-card">
-                                <span className="time-label">End Time</span>
-                                <span className="time-value">
-                                    {new Date(auction.end_time).toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="time-info-card highlight">
-                                <span className="time-label">Time Remaining</span>
-                                <span className="time-value countdown">
-                                    {timeRemaining}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Current Bid */}
-                    <div className="auction-detail-section current-bid-section">
-                        <h3 className="section-title">{currentStatus === 'ended' ? "Winning Bid" : "Current Bid"}</h3>
-                        <div className="current-bid-display">
-                            <span className="currency">$</span>
-                            <span className="bid-amount">{auction.current_bid || "0.00"}</span>
-                        </div>
-                    </div>
-
-                    {/* Place Bid Section */}
-                    {currentStatus === 'active' ? (
-                        <div className="auction-detail-section bid-section">
-                            <h3 className="section-title">Place Your Bid</h3>
-                            <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
-                        </div>
-                    ) : (
-                        <div className="auction-detail-section">
-                            <div className="auction-closed-message">
-                                {currentStatus === 'ended'
-                                    ? 'This auction has ended'
-                                    : `Auction starts at ${new Date(auction.start_time).toLocaleString()}`}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-                    <WinnerModal isOpen={showWinnerModal} onClose={() => setShowWinnerModal(false)} winner={winnerInfo} />
-        </div>
+      <div className="empty-state">
+        <div className="empty-state-icon">⏳</div>
+        <h3 className="empty-state-title">Loading Auction Details...</h3>
+        <p>Please wait while we fetch the auction information.</p>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+          Note: Initial load may take longer due to free-tier hosting on Render.
+        </p>
+      </div>
     );
+  }
+
+  if (!auction) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">📦</div>
+        <h3 className="empty-state-title">No item found.</h3>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auction-details-container">
+      <Link to="/" className="btn btn-outline btn-back">
+        ← Back to Auctions
+      </Link>
+
+      <div className="auction-details-grid">
+        {/* Left Column - Image and Gallery */}
+        <div className="auction-image-section">
+          {auction.image_url ? (
+            <img
+              src={auction.image_url}
+              alt={auction.title}
+              className="auction-detail-image"
+            />
+          ) : (
+            <div className="auction-detail-placeholder">No Image Available</div>
+          )}
+        </div>
+
+        {/* Right Column - Details and Bidding */}
+        <div className="auction-info-section">
+          {/* Header with Status */}
+          <div className="auction-detail-header">
+            <div>
+              <h1 className="auction-detail-title">{auction.title}</h1>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="auction-detail-section">
+            <h3 className="section-title">Description</h3>
+            <p className="auction-detail-description">{auction.description}</p>
+          </div>
+
+          {/* Time Information */}
+          <div className="auction-detail-section">
+            <h3 className="section-title">Auction Timeline</h3>
+            <div className="time-info-grid">
+              <div className="time-info-card">
+                <span className="time-label">Start Time</span>
+                <span className="time-value">
+                  {new Date(auction.start_time).toLocaleString()}
+                </span>
+              </div>
+              <div className="time-info-card">
+                <span className="time-label">End Time</span>
+                <span className="time-value">
+                  {new Date(auction.end_time).toLocaleString()}
+                </span>
+              </div>
+              <div className="time-info-card highlight">
+                <span className="time-label">Time Remaining</span>
+                <span className="time-value countdown">{timeRemaining}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Current Bid */}
+          <div className="auction-detail-section current-bid-section">
+            <h3 className="section-title">
+              {currentStatus === "ended" ? "Winning Bid" : "Current Bid"}
+            </h3>
+            <div className="current-bid-display">
+              <span className="currency">$</span>
+              <span className="bid-amount">
+                {auction.current_bid || "0.00"}
+              </span>
+            </div>
+          </div>
+
+          {/* Place Bid Section */}
+          {currentStatus === "active" ? (
+            <div className="auction-detail-section bid-section">
+              <h3 className="section-title">Place Your Bid</h3>
+              <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
+            </div>
+          ) : (
+            <div className="auction-detail-section">
+              <div className="auction-closed-message">
+                {currentStatus === "ended"
+                  ? "This auction has ended"
+                  : `Auction starts at ${new Date(
+                      auction.start_time
+                    ).toLocaleString()}`}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <WinnerModal
+        isOpen={showWinnerModal}
+        onClose={() => setShowWinnerModal(false)}
+        winner={winnerInfo}
+      />
+    </div>
+  );
 }
 
 export default AuctionDetails;

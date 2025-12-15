@@ -76,8 +76,9 @@ function CreateAuction() {
     const formData = new FormData();
     formData.append("title", createdAuction.title);
     formData.append("description", createdAuction.description);
-    formData.append("start_time", createdAuction.start_time);
-    formData.append("end_time", createdAuction.end_time);
+    // Convert local datetime to ISO UTC string
+    formData.append("start_time", new Date(createdAuction.start_time).toISOString());
+    formData.append("end_time", new Date(createdAuction.end_time).toISOString());
     formData.append("image", createdAuction.image);
 
     try {

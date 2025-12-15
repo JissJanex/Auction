@@ -50,7 +50,16 @@ function AuctionPage() {
   }, []);
 
   if (loading) {
-    return null;
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">⏳</div>
+        <h3 className="empty-state-title">Loading Auctions...</h3>
+        <p>Please wait while we fetch the latest auctions.</p>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+          Note: Initial load may take longer due to free-tier hosting on Render.
+        </p>
+      </div>
+    );
   }
 
   if (auctions.length === 0) {

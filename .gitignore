@@ -170,6 +170,20 @@ postgres-data/
 .env.test.local
 .env.production.local
 
+# Vercel
+.vercel/
+
+# PM2
+pm2.log
+pm2.pid
+
+# Docker local override
+docker-compose.override.yml
+
+# Local temp caches
+tmp/
+.cache-local/
+
 # IDE
 .idea/
 .vscode/

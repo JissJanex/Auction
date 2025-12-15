@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import PlaceBid from "../components/PlaceBid";
+import AutoBid from "../components/AutoBid";
 import WinnerModal from "../components/WinnerModal";
 import { API_BASE_URL, SOCKET_URL } from "../config";
 
@@ -54,13 +55,25 @@ function AuctionDetails() {
               newBid.user_id !== currentUserId &&
               !hasBeenOutbidRef.current
             ) {
-              toast.warning(
-                `You've been outbid! New highest bid: $${newBid.amount}`,
-                {
-                  position: "top-center",
-                  autoClose: 5000,
-                }
-              );
+              // Different messages for manual vs auto bids
+              if (newBid.isAutobid) {
+                toast.info(
+                  `You've been outbid by an automatic bid! New highest bid: $${newBid.amount}`,
+                  {
+                    position: "top-center",
+                    autoClose: 5000,
+                    icon: "🤖",
+                  }
+                );
+              } else {
+                toast.warning(
+                  `You've been outbid! New highest bid: $${newBid.amount}`,
+                  {
+                    position: "top-center",
+                    autoClose: 5000,
+                  }
+                );
+              }
               hasBeenOutbidRef.current = true; // Mark as notified (only once)
             }
 
@@ -327,6 +340,9 @@ function AuctionDetails() {
             <div className="auction-detail-section bid-section">
               <h3 className="section-title">Place Your Bid</h3>
               <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
+              
+              {/* Auto-Bid Component */}
+              <AutoBid auction={auction} />
             </div>
           ) : (
             <div className="auction-detail-section">

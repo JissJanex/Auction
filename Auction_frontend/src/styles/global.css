@@ -1753,3 +1753,164 @@ h3 {
     width: 100%;
   }
 }
+
+/* ===================================
+   Auto-Bid Component Styles
+   =================================== */
+
+.autobid-container {
+  margin-top: var(--space-6);
+}
+
+.autobid-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.autobid-form {
+  background: var(--white);
+  border: 2px solid var(--accent-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: 0 4px 12px rgba(214, 158, 46, 0.1);
+}
+
+.autobid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.autobid-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+}
+
+.autobid-close {
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.autobid-close:hover {
+  color: var(--gray-800);
+}
+
+.autobid-description {
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+  margin-bottom: var(--space-6);
+  line-height: 1.5;
+}
+
+.autobid-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.input-hint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+  margin-top: var(--space-2);
+}
+
+.autobid-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.autobid-actions .btn {
+  flex: 1;
+}
+
+.autobid-active {
+  background: linear-gradient(135deg, var(--accent-light), var(--accent));
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(214, 158, 46, 0.2);
+}
+
+.autobid-status {
+  flex: 1;
+}
+
+.autobid-badge {
+  display: inline-block;
+  background: var(--white);
+  color: var(--accent-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.autobid-status-text {
+  font-size: var(--font-size-sm);
+  color: var(--white);
+  margin: 0;
+  font-weight: 500;
+}
+
+.autobid-delete {
+  background: var(--white);
+  color: var(--accent-dark);
+  border-color: var(--white);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.autobid-delete:hover {
+  background: var(--gray-100);
+  color: var(--error);
+  border-color: var(--gray-100);
+}
+
+.autobid-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 568px) {
+  .autobid-form {
+    padding: var(--space-4);
+  }
+
+  .autobid-actions {
+    flex-direction: column;
+  }
+
+  .autobid-actions .btn {
+    width: 100%;
+  }
+
+  .autobid-active {
+    flex-direction: column;
+    gap: var(--space-4);
+    text-align: center;
+  }
+
+  .autobid-delete {
+    width: 100%;
+  }
+}

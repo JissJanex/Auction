@@ -95,6 +95,8 @@ export default function AutoBid({ auction }) {
       setShowForm(false);
       setMaxBid("");
       setIncrement("");
+      // Refresh autobid data to display the new values
+      await checkExistingAutoBid();
     } catch (error) {
       console.error("Error placing autobid:", error);
       toast.error(error.response?.data || "Failed to activate auto-bid");
@@ -125,6 +127,7 @@ export default function AutoBid({ auction }) {
       toast.info("Auto-bid deactivated");
       setIsAutoBidActive(false);
       setShowForm(false);
+      setAutobidData(null); // Clear the autobid data
     } catch (error) {
       console.error("Error deleting autobid:", error);
       toast.error("Failed to deactivate auto-bid");

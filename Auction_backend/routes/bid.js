@@ -4,68 +4,103 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-//Function to handle autobids
+//Function to handle autobids - processes chain of autobidders
 async function auto_bid(auction_id, currentBidderId) {
+  const allAutobids = []; // Track all autobids placed in this chain
+  
   try {
-    // Get the current highest bid
-    const maxBidResult = await db.query(
-      `SELECT amount, user_id FROM bids WHERE auction_id=$1 ORDER BY amount DESC LIMIT 1`,
-      [auction_id]
-    );
+    let lastBidderId = currentBidderId;
+    let shouldContinue = true;
     
-    if (maxBidResult.rows.length === 0) {
-      return null; // No bids yet
+    // Keep processing autobidders until no more are eligible
+    while (shouldContinue) {
+      // Get the current highest bid
+      const maxBidResult = await db.query(
+        `SELECT amount, user_id FROM bids WHERE auction_id=$1 ORDER BY amount DESC LIMIT 1`,
+        [auction_id]
+      );
+      
+      if (maxBidResult.rows.length === 0) {
+        break; // No bids yet
+      }
+      
+      const currentHighestBid = parseFloat(maxBidResult.rows[0].amount);
+      const currentHighestBidder = maxBidResult.rows[0].user_id;
+      
+      // Get autobidders who have max_bid higher than current bid and aren't the current bidder
+      const autobidders = await db.query(
+        `SELECT * FROM auto_bids 
+         WHERE auction_id=$1 
+         AND max_bid > $2 
+         AND user_id != $3
+         ORDER BY max_bid DESC, created_at ASC`,
+        [auction_id, currentHighestBid, currentHighestBidder]
+      );
+      
+      if (autobidders.rows.length === 0) {
+        shouldContinue = false; // No more eligible autobidders
+        break;
+      }
+      
+      // Get the highest autobidder
+      const topAutobidder = autobidders.rows[0];
+      
+      // Calculate the new bid amount
+      const increment = parseFloat(topAutobidder.increment);
+      const maxBid = parseFloat(topAutobidder.max_bid);
+      let newBidAmount = currentHighestBid + increment;
+      
+      // Don't exceed the autobidder's max_bid
+      if (newBidAmount > maxBid) {
+        newBidAmount = maxBid;
+      }
+      
+      // Insert the autobid
+      await db.query(
+        `INSERT INTO bids (auction_id, user_id, amount) VALUES ($1,$2,$3)`,
+        [auction_id, topAutobidder.user_id, newBidAmount]
+      );
+      
+      // Update the current bid in the auctions table
+      await db.query(`UPDATE auctions SET current_bid=$1 WHERE id=$2`, [
+        newBidAmount,
+        auction_id,
+      ]);
+      
+      // Store this autobid
+      allAutobids.push({
+        auction_id, 
+        user_id: topAutobidder.user_id, 
+        amount: newBidAmount,
+        previousHighestBidder: currentHighestBidder,
+        isAutobid: true
+      });
+      
+      // Update last bidder for next iteration
+      lastBidderId = topAutobidder.user_id;
+      
+      // Check if this autobidder hit their max - if so, continue to next
+      if (newBidAmount >= maxBid) {
+        // This autobidder is at their max, check if there are others
+        continue;
+      }
+      
+      // If the bid didn't hit max and there are no higher autobidders, stop
+      const higherAutobidders = await db.query(
+        `SELECT * FROM auto_bids 
+         WHERE auction_id=$1 
+         AND max_bid > $2 
+         AND user_id != $3
+         ORDER BY max_bid DESC`,
+        [auction_id, newBidAmount, topAutobidder.user_id]
+      );
+      
+      if (higherAutobidders.rows.length === 0) {
+        shouldContinue = false;
+      }
     }
     
-    const currentHighestBid = parseFloat(maxBidResult.rows[0].amount);
-    const currentHighestBidder = maxBidResult.rows[0].user_id;
-    
-    // Get autobidders who have max_bid higher than current bid and aren't the current bidder
-    const autobidders = await db.query(
-      `SELECT * FROM auto_bids 
-       WHERE auction_id=$1 
-       AND max_bid > $2 
-       AND user_id != $3
-       ORDER BY max_bid DESC, created_at ASC`,
-      [auction_id, currentHighestBid, currentHighestBidder]
-    );
-    
-    if (autobidders.rows.length === 0) {
-      return null; // No eligible autobidders
-    }
-    
-    // Get the highest autobidder
-    const topAutobidder = autobidders.rows[0];
-    
-    // Calculate the new bid amount
-    const increment = parseFloat(topAutobidder.increment);
-    const maxBid = parseFloat(topAutobidder.max_bid);
-    let newBidAmount = currentHighestBid + increment;
-    
-    // Don't exceed the autobidder's max_bid
-    if (newBidAmount > maxBid) {
-      newBidAmount = maxBid;
-    }
-    
-    // Insert the autobid directly (without calling placeBid to avoid recursion)
-    await db.query(
-      `INSERT INTO bids (auction_id, user_id, amount) VALUES ($1,$2,$3)`,
-      [auction_id, topAutobidder.user_id, newBidAmount]
-    );
-    
-    // Update the current bid in the auctions table
-    await db.query(`UPDATE auctions SET current_bid=$1 WHERE id=$2`, [
-      newBidAmount,
-      auction_id,
-    ]);
-    
-    return { 
-      auction_id, 
-      user_id: topAutobidder.user_id, 
-      amount: newBidAmount,
-      previousHighestBidder: currentHighestBidder,
-      isAutobid: true
-    };
+    return allAutobids.length > 0 ? allAutobids : null;
   } catch (error) {
     console.error("Error in auto_bid:", error);
     return null;

@@ -53,9 +53,12 @@ io.on("connection", (socket) => {
         isAutobid: false,
       });
 
-      // If there was an autobid triggered, broadcast it too
-      if (result.autobidResult) {
-        io.emit("bidUpdate", result.autobidResult);
+      // If there were autobids triggered, broadcast each one
+      if (result.autobidResult && Array.isArray(result.autobidResult)) {
+        // Emit each autobid in the chain
+        for (const autobid of result.autobidResult) {
+          io.emit("bidUpdate", autobid);
+        }
       }
       console.log(result);
     } catch (err) {

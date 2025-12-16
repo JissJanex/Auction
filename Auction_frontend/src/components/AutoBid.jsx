@@ -10,6 +10,7 @@ export default function AutoBid({ auction }) {
   const [showForm, setShowForm] = useState(false);
   const [maxBid, setMaxBid] = useState("");
   const [increment, setIncrement] = useState("");
+  const [autobidData, setAutobidData] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -30,6 +31,9 @@ export default function AutoBid({ auction }) {
         }
       );
       setIsAutoBidActive(response.data.exists);
+      if (response.data.exists && response.data.autobid) {
+        setAutobidData(response.data.autobid);
+      }
     } catch (error) {
       console.error("Error checking autobid:", error);
     }
@@ -222,6 +226,22 @@ export default function AutoBid({ auction }) {
             <p className="autobid-status-text">
               You'll automatically bid when outbid
             </p>
+            {autobidData && (
+              <div className="autobid-details">
+                <div className="autobid-detail-item">
+                  <span className="autobid-detail-label">Max Bid:</span>
+                  <span className="autobid-detail-value">
+                    ${parseFloat(autobidData.max_bid).toFixed(2)}
+                  </span>
+                </div>
+                <div className="autobid-detail-item">
+                  <span className="autobid-detail-label">Increment:</span>
+                  <span className="autobid-detail-value">
+                    ${parseFloat(autobidData.increment).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           <button
             className="btn btn-outline btn-sm autobid-delete"

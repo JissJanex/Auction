@@ -66,36 +66,7 @@ function AuctionDetails() {
     // Listen for Dutch auction sold event
     socketRef.current.on("dutchAuctionSold", (data) => {
       if (data.auction_id === parseInt(id)) {
-        const token = localStorage.getItem("token");
-        if (token) {
-          try {
-            const decoded = jwtDecode(token);
-            const currentUserId = decoded.id;
-
-            if (data.winner_id === currentUserId) {
-              toast.success(
-                `Congratulations! You won the auction at $${data.final_price}!`,
-                {
-                  position: "top-center",
-                  autoClose: 5000,
-                  icon: "🎉",
-                }
-              );
-            } else {
-              toast.info(
-                `Auction sold to another buyer at $${data.final_price}`,
-                {
-                  position: "top-center",
-                  autoClose: 5000,
-                }
-              );
-            }
-          } catch (error) {
-            console.error("Error decoding token:", error);
-          }
-        }
-
-        // Refresh auction data to show winner
+        // Just refresh auction data - the winner modal will show the message
         fetchAuction();
       }
     });
@@ -232,7 +203,8 @@ function AuctionDetails() {
             setWinnerInfo({ 
               role, 
               winnerName: "A buyer", // Dutch auctions don't show buyer name
-              winningBid: auction.current_price 
+              winningBid: auction.current_price,
+              isDutch: true
             });
           } else {
             // No winner for Dutch auction
@@ -246,6 +218,7 @@ function AuctionDetails() {
               role,
               winnerName: null,
               winningBid: auction.current_price || null,
+              isDutch: true
             });
           }
           setShowWinnerModal(true);

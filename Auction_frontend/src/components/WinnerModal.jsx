@@ -1,12 +1,12 @@
 function WinnerModal({ isOpen, onClose, winner }) {
   if (!isOpen) return null;
-  const { role, winnerName, winningBid } = winner || {};
+  const { role, winnerName, winningBid, isDutch } = winner || {};
 
   const title =
     role === "owner"
       ? "Auction Ended"
       : role === "winner"
-      ? "You Won!"
+      ? isDutch ? "You Bought It!" : "You Won!"
       : "Auction Result";
 
   // Pick exactly one message to render
@@ -14,21 +14,34 @@ function WinnerModal({ isOpen, onClose, winner }) {
   if (winnerName == null && (!winningBid || Number(winningBid) === 0)) {
     message = <>Auction has ended. No bids were placed.😥</>;
   } else if (role === "owner") {
-    message = (
+    message = isDutch ? (
+      <>
+        Your Dutch auction has ended. Final price: <strong>${winningBid}</strong>.
+      </>
+    ) : (
       <>
         Your auction has ended. Winning bid: <strong>${winningBid}</strong> by{" "}
         <strong>{winnerName || "—"}</strong>.
       </>
     );
   } else if (role === "winner") {
-    message = (
+    message = isDutch ? (
+      <>
+        Congratulations! You successfully purchased this item at{" "}
+        <strong>${winningBid}</strong>.
+      </>
+    ) : (
       <>
         Congratulations — you won! Your bid of <strong>${winningBid}</strong>{" "}
         was the highest.
       </>
     );
   } else if (role === "loser") {
-    message = (
+    message = isDutch ? (
+      <>
+        This Dutch auction has ended. Item was sold at <strong>${winningBid}</strong>.
+      </>
+    ) : (
       <>
         Auction has ended. Winning bid: <strong>${winningBid}</strong> by{" "}
         <strong>{winnerName || "—"}</strong>. Better luck next time.

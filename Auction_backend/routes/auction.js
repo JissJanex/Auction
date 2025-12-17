@@ -8,13 +8,17 @@ const router = express.Router();
 // Get all active or upcoming auctions
 router.get("/", async (req, res) => {
   try {
+    //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
-      SELECT * FROM auctions
-      WHERE end_time > NOW()
-      ORDER BY start_time ASC
+      SELECT a.* FROM auctions a
+      LEFT JOIN dutch_auctions da ON a.id = da.auction_id AND a.auction_type = 'dutch'
+      WHERE a.end_time > NOW()
+        AND (a.auction_type != 'dutch' OR da.winner_id IS NULL)
+      ORDER BY a.start_time ASC
     `);
     res.json(result.rows);
   } catch (err) {
+    console.error('Error fetching active auctions:', err);
     res.status(500).json({ error: "Failed to fetch auctions" });
   }
 });
@@ -22,13 +26,17 @@ router.get("/", async (req, res) => {
 // Get all ended auctions
 router.get("/ended", async (req, res) => {
   try {
+    //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
-      SELECT * FROM auctions
-      WHERE end_time <= NOW()
-      ORDER BY end_time DESC
+      SELECT a.* FROM auctions a
+      LEFT JOIN dutch_auctions da ON a.id = da.auction_id AND a.auction_type = 'dutch'
+      WHERE a.end_time <= NOW()
+        OR (a.auction_type = 'dutch' AND da.winner_id IS NOT NULL)
+      ORDER BY a.end_time DESC
     `);
     res.json(result.rows);
   } catch (err) {
+    console.error('Error fetching ended auctions:', err);
     res.status(500).json({ error: "Failed to fetch ended auctions" });
   }
 });

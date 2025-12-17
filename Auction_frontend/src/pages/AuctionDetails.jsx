@@ -402,18 +402,20 @@ function AuctionDetails() {
             </div>
           </div>
 
-          {/* Current Bid */}
-          <div className="auction-detail-section current-bid-section">
-            <h3 className="section-title">
-              {currentStatus === "ended" ? "Winning Bid" : "Current Bid"}
-            </h3>
-            <div className="current-bid-display">
-              <span className="currency">$</span>
-              <span className="bid-amount">
-                {auction.current_bid || "0.00"}
-              </span>
+          {/* Current Bid - Only show for regular auctions */}
+          {!isDutchAuction && (
+            <div className="auction-detail-section current-bid-section">
+              <h3 className="section-title">
+                {currentStatus === "ended" ? "Winning Bid" : "Current Bid"}
+              </h3>
+              <div className="current-bid-display">
+                <span className="currency">$</span>
+                <span className="bid-amount">
+                  {auction.current_bid || "0.00"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Place Bid Section or Buy Now (for Dutch Auction) */}
           {currentStatus === "active" ? (

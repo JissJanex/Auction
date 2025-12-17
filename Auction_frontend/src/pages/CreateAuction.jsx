@@ -128,7 +128,6 @@ function CreateAuction() {
           },
         }
       );
-      console.log("Auction created:", response.data);
       toast.success(dutchData.isDutch ? "Dutch auction created successfully!" : "Auction created successfully!");
       // Reset form
       setCreatedAuction({

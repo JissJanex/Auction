@@ -1,6 +1,6 @@
 # 🔨 Auction Platform
 
-A real-time auction platform where users can create auctions, place bids, and receive live updates via WebSockets.
+A real-time auction platform with support for regular auctions, Dutch auctions, and automatic bidding. Users can create auctions, place bids, set up autobids, and receive live updates via WebSockets.
 
 ## 🚀 Live Demo
 
@@ -15,34 +15,42 @@ A real-time auction platform where users can create auctions, place bids, and re
 ## 🛠️ Tech Stack
 
 **Frontend:**
-- React
-- Vite
-- React Router
-- Socket.IO Client
-- Axios
-- React Toastify
+- React 19.2.0
+- Vite 7.2.4
+- Socket.IO Client 4.8.1
+- Axios 1.7.9
+- React Toastify 11.0.2
 
 **Backend:**
 - Node.js
-- Express
-- Socket.IO
-- PostgreSQL
-- JWT
-- Bcrypt
-- Multer
-- Cloudinary
+- Express 5.2.1
+- Socket.IO 4.8.1
+- PostgreSQL (via node-postgres)
+- JWT (jsonwebtoken 9.0.2)
+- Bcrypt 5.1.1
+- Cloudinary 2.5.1
 
 ## ✨ Features
 
+### Core Features
 - ✅ User authentication (signup/login with JWT)
 - ✅ Create auctions with title, description, image, and time range
 - ✅ Real-time bidding with Socket.IO
-- ✅ Live bid updates across all connected clients
-- ✅ Auction status tracking (upcoming, active, ended)
-- ✅ Winner announcement when auction ends
-- ✅ View ended auctions
+- ✅ Winner announcement modal when auction ends
 - ✅ Image upload to Cloudinary
-- ✅ Responsive design
+
+### Advanced Features
+
+#### 🤖 AutoBid System
+- **Automatic Bidding**: Set a maximum bid and increment amount
+- **Chain Processing**: System automatically places bids when outbid, up to your maximum
+- **Real-time Updates**: See autobid activity in real-time
+
+#### 📉 Dutch Auction
+- **Reverse Pricing**: Price starts high and decreases over time
+- **Configurable Drop Rate**: Set starting price, price drop amount, and drop interval
+- **Real-time Price Updates**: Watch the price drop live via WebSockets
+- **Instant Purchase**: No bidding wars—just buy at the current price
 
 ## 🏃 Running Locally
 
@@ -122,7 +130,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Auctions table
+-- Auctions table (supports both regular and Dutch auctions)
 CREATE TABLE auctions (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -132,16 +140,40 @@ CREATE TABLE auctions (
   end_time TIMESTAMP NOT NULL,
   current_bid DECIMAL(10, 2) DEFAULT 0.00,
   owner_id INTEGER REFERENCES users(id),
+  auction_type VARCHAR(50) DEFAULT 'normal', -- 'normal' or 'dutch'
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Bids table
+-- Bids table (for regular auctions)
 CREATE TABLE bids (
   id SERIAL PRIMARY KEY,
   auction_id INTEGER REFERENCES auctions(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id),
   user_name VARCHAR(255),
   amount DECIMAL(10, 2) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- AutoBids table
+CREATE TABLE auto_bids (
+  id SERIAL PRIMARY KEY,
+  auction_id INTEGER REFERENCES auctions(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id),
+  max_bid DECIMAL(10, 2) NOT NULL,
+  bid_increment DECIMAL(10, 2) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(auction_id, user_id)
+);
+
+-- Dutch Auctions table
+CREATE TABLE dutch_auctions (
+  id SERIAL PRIMARY KEY,
+  auction_id INTEGER REFERENCES auctions(id) ON DELETE CASCADE UNIQUE,
+  start_price DECIMAL(10, 2) NOT NULL,
+  current_price DECIMAL(10, 2) NOT NULL,
+  price_drop DECIMAL(10, 2) NOT NULL,
+  drop_interval_minutes INTEGER NOT NULL,
+  winner_id INTEGER REFERENCES users(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 ```
@@ -173,14 +205,28 @@ CREATE TABLE bids (
 - `POST /auth/login` - Login and receive JWT token
 
 ### Auctions
-- `GET /auctions` - Get all active/upcoming auctions
-- `GET /auctions/ended` - Get all ended auctions
+- `GET /auctions` - Get all active/upcoming auctions (excludes sold Dutch auctions)
+- `GET /auctions/ended` - Get all ended auctions (includes sold Dutch auctions)
 - `GET /auctions/:id` - Get single auction details
-- `POST /auctions` - Create new auction (requires auth)
+- `POST /auctions` - Create new regular auction (requires auth)
 
-### Bids
+### Dutch Auctions
+- `GET /dutchauctions/:id` - Get Dutch auction-specific details
+- `POST /dutchauctions` - Create new Dutch auction (requires auth)
+  - Body: `title`, `description`, `image`, `start_time`, `end_time`, `start_price`, `price_drop`, `drop_interval_minutes`
+
+### Bids (Regular Auctions)
 - `GET /bids?auction_id=:id` - Get all bids for an auction
 - WebSocket event `placeBid` - Place a new bid (real-time)
+
+### Dutch Bids
+- `POST /dutchbids/buy/:id` - Purchase Dutch auction at current price (requires auth)
+
+### AutoBids
+- `GET /autobids/check/:auction_id` - Check if user has an autobid on auction (requires auth)
+- `POST /autobids` - Create/update autobid (requires auth)
+  - Body: `auction_id`, `max_bid`, `bid_increment`
+- `DELETE /autobids/:auction_id` - Remove autobid (requires auth)
 
 ## 🔌 WebSocket Events
 
@@ -191,14 +237,49 @@ CREATE TABLE bids (
   ```
 
 ### Server → Client
-- `bidUpdate` - New bid placed successfully
+- `bidUpdate` - New bid placed successfully (manual or autobid)
   ```javascript
-  socket.on('bidUpdate', (bid) => { /* update UI */ })
+  socket.on('bidUpdate', (bid) => {
+    // bid.isAutobid indicates if it was an automatic bid
+    // bid.previousHighestBidder contains the outbid user's ID
+  })
   ```
 - `bidError` - Bid placement error
   ```javascript
   socket.on('bidError', (error) => { /* show error */ })
   ```
+- `dutchAuctionPriceUpdate` - Dutch auction price dropped
+  ```javascript
+  socket.on('dutchAuctionPriceUpdate', ({ auction_id, new_price }) => {
+    // Update UI with new price
+  })
+  ```
+- `dutchAuctionSold` - Dutch auction was purchased
+  ```javascript
+  socket.on('dutchAuctionSold', ({ auction_id, winner_id, final_price }) => {
+    // Show winner modal
+  })
+  ```
+
+## 🎯 How It Works
+
+### Regular Auctions
+1. **Create**: Set title, description, image, start/end times
+2. **Bid**: Users place manual bids or set up autobids
+3. **AutoBid Chain**: When outbid, autobidders automatically counter-bid up to their max
+4. **Winner**: Highest bidder when time expires wins
+
+### Dutch Auctions
+1. **Create**: Set starting price, price drop amount, and drop interval
+2. **Price Drops**: Price automatically decreases at specified intervals
+3. **Purchase**: First user to buy at current price wins immediately
+4. **Real-time**: All viewers see price drops in real-time
+
+### AutoBid System
+1. **Setup**: User sets maximum bid and increment amount
+2. **Trigger**: Autobid activates when user is outbid
+3. **Chain**: Multiple autobidders compete until one reaches their max
+4. **Notification**: Users notified when outbid by manual vs automatic bids
 
 ## 🤝 Contributing
 
@@ -220,3 +301,5 @@ This project is licensed under the ISC License.
 - GitHub: [@JissJanex](https://github.com/JissJanex)
 
 ---
+
+Made with ❤️ using React, Node.js, and PostgreSQL

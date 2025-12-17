@@ -7,6 +7,8 @@ import auctionRoutes from "./routes/auction.js";
 import bidRoutes, { placeBid } from "./routes/bid.js";
 import auth from "./routes/auth.js";
 import autobidRoutes from "./routes/autobid.js";
+import dutchAuctionRoutes from "./routes/dutchauction.js";
+import dutchBidRoutes from "./routes/dutchbid.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "*";
 const PORT = process.env.PORT || 3000;
@@ -29,10 +31,12 @@ app.use("/auctions", auctionRoutes);
 app.use("/bids", bidRoutes);
 app.use("/autobids", autobidRoutes);
 app.use("/auth", auth);
+app.use("/dutchauctions", dutchAuctionRoutes);
+app.use("/dutchbids", dutchBidRoutes);
 
 //Web socket setup
 const server = http.createServer(app);
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: { origin: FRONTEND_URL === "*" ? "*" : [FRONTEND_URL] },
 });
 

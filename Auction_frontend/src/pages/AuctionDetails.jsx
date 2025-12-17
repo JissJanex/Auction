@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import PlaceBid from "../components/PlaceBid";
 import AutoBid from "../components/AutoBid";
+import BuyNow from "../components/BuyNow";
 import WinnerModal from "../components/WinnerModal";
 import { API_BASE_URL, SOCKET_URL } from "../config";
 
@@ -14,6 +15,7 @@ function AuctionDetails() {
   const [loading, setLoading] = useState(true);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState("");
+  const [isDutchAuction, setIsDutchAuction] = useState(false);
   const socketRef = useRef(null);
   const hasBeenOutbidRef = useRef(false); // Track if user has been notified about being outbid
 
@@ -22,8 +24,21 @@ function AuctionDetails() {
 
   const fetchAuction = useCallback(async () => {
     try {
+      // Always fetch from auctions table first
       const res = await axios.get(`${API_BASE_URL}/auctions/${id}`);
-      setAuction(res.data);
+      const auctionData = res.data;
+      
+      // Check if it's a Dutch auction
+      if (auctionData.auction_type === 'dutch') {
+        // Fetch Dutch-specific details
+        const dutchRes = await axios.get(`${API_BASE_URL}/dutchauctions/${id}`);
+        // Merge the data
+        setAuction({ ...auctionData, ...dutchRes.data });
+        setIsDutchAuction(true);
+      } else {
+        setAuction(auctionData);
+        setIsDutchAuction(false);
+      }
     } catch (error) {
       console.error("Error fetching auction details:", error);
     } finally {
@@ -39,6 +54,51 @@ function AuctionDetails() {
   useEffect(() => {
     // Create new socket connection
     socketRef.current = io(SOCKET_URL);
+
+    // Listen for Dutch auction price updates
+    socketRef.current.on("dutchAuctionPriceUpdate", (data) => {
+      if (data.auction_id === parseInt(id)) {
+        // Update current price in real-time
+        setAuction((prev) => prev ? { ...prev, current_price: data.new_price } : null);
+      }
+    });
+
+    // Listen for Dutch auction sold event
+    socketRef.current.on("dutchAuctionSold", (data) => {
+      if (data.auction_id === parseInt(id)) {
+        const token = localStorage.getItem("token");
+        if (token) {
+          try {
+            const decoded = jwtDecode(token);
+            const currentUserId = decoded.id;
+
+            if (data.winner_id === currentUserId) {
+              toast.success(
+                `Congratulations! You won the auction at $${data.final_price}!`,
+                {
+                  position: "top-center",
+                  autoClose: 5000,
+                  icon: "🎉",
+                }
+              );
+            } else {
+              toast.info(
+                `Auction sold to another buyer at $${data.final_price}`,
+                {
+                  position: "top-center",
+                  autoClose: 5000,
+                }
+              );
+            }
+          } catch (error) {
+            console.error("Error decoding token:", error);
+          }
+        }
+
+        // Refresh auction data to show winner
+        fetchAuction();
+      }
+    });
 
     socketRef.current.on("bidUpdate", (newBid) => {
       // Only process bids for this auction
@@ -94,6 +154,8 @@ function AuctionDetails() {
     return () => {
       if (socketRef.current) {
         socketRef.current.off("bidUpdate");
+        socketRef.current.off("dutchAuctionPriceUpdate");
+        socketRef.current.off("dutchAuctionSold");
         socketRef.current.disconnect();
       }
     };
@@ -114,6 +176,8 @@ function AuctionDetails() {
     const endTime = new Date(auction.end_time);
 
     if (now < startTime) return "upcoming";
+    // For Dutch auctions, check if someone bought it (winner_id is not null and not undefined)
+    if (isDutchAuction && auction.winner_id) return "ended";
     if (now > endTime) return "ended";
     return "active";
   };
@@ -144,9 +208,52 @@ function AuctionDetails() {
 
     // Only show modal if not already shown
     if (showWinnerModal) return;
+    
+    // Prevent showing modal if already loaded
+    if (winnerLoadedRef.current) return;
 
     const loadWinner = async () => {
       try {
+        // For Dutch auctions, check winner_id directly
+        if (isDutchAuction) {
+          if (auction.winner_id) {
+            const token = localStorage.getItem("token");
+            let role = "loser";
+            if (token) {
+              try {
+                const decoded = jwtDecode(token);
+                const currentUserId = decoded.id;
+                if (currentUserId === auction.owner_id) role = "owner";
+                else if (currentUserId === auction.winner_id) role = "winner";
+              } catch (err) {
+                // ignore
+              }
+            }
+            setWinnerInfo({ 
+              role, 
+              winnerName: "A buyer", // Dutch auctions don't show buyer name
+              winningBid: auction.current_price 
+            });
+          } else {
+            // No winner for Dutch auction
+            const token = localStorage.getItem("token");
+            const role = token
+              ? jwtDecode(token).id === auction.owner_id
+                ? "owner"
+                : "loser"
+              : "loser";
+            setWinnerInfo({
+              role,
+              winnerName: null,
+              winningBid: auction.current_price || null,
+            });
+          }
+          setShowWinnerModal(true);
+          winnerLoadedRef.current = true;
+          return;
+        }
+
+        // For regular auctions, fetch bids
         const res = await axios.get(
           `${API_BASE_URL}/bids?auction_id=${auction.id}`
         );
@@ -189,7 +296,7 @@ function AuctionDetails() {
     };
 
     loadWinner();
-  }, [auction, currentStatus]);
+  }, [auction, currentStatus, isDutchAuction]);
 
   //Function to calculate time remaining for auction to start or end
   const getTimeRemaining = (endTime, startTime) => {
@@ -335,15 +442,22 @@ function AuctionDetails() {
             </div>
           </div>
 
-          {/* Place Bid Section */}
+          {/* Place Bid Section or Buy Now (for Dutch Auction) */}
           {currentStatus === "active" ? (
-            <div className="auction-detail-section bid-section">
-              <h3 className="section-title">Place Your Bid</h3>
-              <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
-              
-              {/* Auto-Bid Component */}
-              <AutoBid auction={auction} />
-            </div>
+            isDutchAuction ? (
+              <div className="auction-detail-section bid-section">
+                <h3 className="section-title">Dutch Auction - Buy Now</h3>
+                <BuyNow auction={auction} onPurchase={fetchAuction} />
+              </div>
+            ) : (
+              <div className="auction-detail-section bid-section">
+                <h3 className="section-title">Place Your Bid</h3>
+                <PlaceBid auction={auction} onBidPlaced={handleBidPlaced} />
+                
+                {/* Auto-Bid Component */}
+                <AutoBid auction={auction} />
+              </div>
+            )
           ) : (
             <div className="auction-detail-section">
               <div className="auction-closed-message">

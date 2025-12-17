@@ -54,8 +54,8 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO auctions
-       (title, description, image_url, start_time, end_time, owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6)
+       (title, description, image_url, start_time, end_time, owner_id, auction_type)
+       VALUES ($1,$2,$3,$4,$5,$6, 'normal')
        RETURNING *`,
       [title, description, image_url, startUTC, endUTC, owner_id]
     );

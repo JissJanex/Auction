@@ -3,6 +3,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../config";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import DutchAuctionToggle from "../components/DutchAuctionToggle";
 
 function CreateAuction() {
   const navigate = useNavigate();
@@ -12,6 +13,12 @@ function CreateAuction() {
     image: null,
     start_time: "",
     end_time: "",
+  });
+  const [dutchData, setDutchData] = useState({
+    isDutch: false,
+    startPrice: null,
+    priceDrop: null,
+    dropInterval: null,
   });
   //To prevent multiple submissions while creating an auction
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,6 +79,25 @@ function CreateAuction() {
       return;
     }
 
+    // Dutch auction validation
+    if (dutchData.isDutch) {
+      if (!dutchData.startPrice || dutchData.startPrice <= 0) {
+        toast.error("Please enter a valid starting price for Dutch auction");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!dutchData.priceDrop || dutchData.priceDrop <= 0) {
+        toast.error("Please enter a valid price drop amount");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!dutchData.dropInterval || dutchData.dropInterval < 1) {
+        toast.error("Drop interval must be at least 1 minute");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     // Prepare form data for file upload
     const formData = new FormData();
     formData.append("title", createdAuction.title);
@@ -81,9 +107,19 @@ function CreateAuction() {
     formData.append("end_time", new Date(createdAuction.end_time).toISOString());
     formData.append("image", createdAuction.image);
 
+    // Add Dutch auction specific fields if enabled
+    if (dutchData.isDutch) {
+      formData.append("start_price", dutchData.startPrice);
+      formData.append("price_drop", dutchData.priceDrop);
+      formData.append("drop_interval_minutes", dutchData.dropInterval);
+    }
+
+    // Choose endpoint based on auction type
+    const endpoint = dutchData.isDutch ? "/dutchauctions" : "/auctions";
+
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auctions`,
+        `${API_BASE_URL}${endpoint}`,
         formData,
         {
           headers: {
@@ -93,7 +129,7 @@ function CreateAuction() {
         }
       );
       console.log("Auction created:", response.data);
-      toast.success("Auction created successfully!");
+      toast.success(dutchData.isDutch ? "Dutch auction created successfully!" : "Auction created successfully!");
       // Reset form
       setCreatedAuction({
         title: "",
@@ -101,6 +137,12 @@ function CreateAuction() {
         image: null,
         start_time: "",
         end_time: "",
+      });
+      setDutchData({
+        isDutch: false,
+        startPrice: null,
+        priceDrop: null,
+        dropInterval: null,
       });
       navigate("/");
     } catch (error) {
@@ -242,6 +284,8 @@ function CreateAuction() {
               />
             </div>
           </div>
+
+          <DutchAuctionToggle onDutchDataChange={setDutchData} />
 
           <div className="form-actions">
             <button

@@ -36,7 +36,7 @@ function BuyNow({ auction, onPurchase }) {
 
     // Confirm purchase
     const confirmPurchase = window.confirm(
-      `Are you sure you want to buy this item for $${auction.current_price}?`
+      `Are you sure you want to buy this item for $${Number(auction.current_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}?`
     );
     
     if (!confirmPurchase) return;
@@ -80,10 +80,10 @@ function BuyNow({ auction, onPurchase }) {
         <div className="buy-now-price-label">Current Price</div>
         <div className="buy-now-price-display">
           <span className="currency">$</span>
-          <span className="price-amount">{auction.current_price}</span>
+          <span className="price-amount">{Number(auction.current_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
         </div>
         <p className="buy-now-hint">
-          ⚡ Price drops every {auction.drop_interval_minutes} minute(s) by ${auction.price_drop}
+          ⚡ Price drops every {auction.drop_interval_minutes} minute(s) by ${Number(auction.price_drop).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
         </p>
       </div>
 

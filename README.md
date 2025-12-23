@@ -182,7 +182,7 @@ CREATE TABLE dutch_auctions (
 
 ### Backend (`.env`)
 | Variable | Description | Example |
-|----------|-------------|---------||
+|----------|-------------|---------|
 | `PORT` | Server port | `3000` |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
 | `JWT_SECRET` | Secret key for JWT signing | `your-secret-key` |

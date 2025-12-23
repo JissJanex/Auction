@@ -234,13 +234,13 @@ export default function AutoBid({ auction }) {
                 <div className="autobid-detail-item">
                   <span className="autobid-detail-label">Max Bid:</span>
                   <span className="autobid-detail-value">
-                    ${parseFloat(autobidData.max_bid).toFixed(2)}
+                    ${Number(autobidData.max_bid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="autobid-detail-item">
                   <span className="autobid-detail-label">Increment:</span>
                   <span className="autobid-detail-value">
-                    ${parseFloat(autobidData.increment).toFixed(2)}
+                    ${Number(autobidData.increment).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </span>
                 </div>
               </div>

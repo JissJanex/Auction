@@ -10,7 +10,8 @@ router.get("/", async (req, res) => {
   try {
     //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
-      SELECT a.* FROM auctions a
+      SELECT a.*, da.current_price
+      FROM auctions a
       LEFT JOIN dutch_auctions da ON a.id = da.auction_id AND a.auction_type = 'dutch'
       WHERE a.end_time > NOW()
         AND (a.auction_type != 'dutch' OR da.winner_id IS NULL)
@@ -28,7 +29,8 @@ router.get("/ended", async (req, res) => {
   try {
     //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
-      SELECT a.* FROM auctions a
+      SELECT a.*, da.current_price
+      FROM auctions a
       LEFT JOIN dutch_auctions da ON a.id = da.auction_id AND a.auction_type = 'dutch'
       WHERE a.end_time <= NOW()
         OR (a.auction_type = 'dutch' AND da.winner_id IS NOT NULL)

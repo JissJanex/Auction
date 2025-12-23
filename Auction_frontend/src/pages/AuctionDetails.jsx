@@ -89,7 +89,7 @@ function AuctionDetails() {
               // Different messages for manual vs auto bids
               if (newBid.isAutobid) {
                 toast.info(
-                  `You've been outbid by an automatic bid! New highest bid: $${newBid.amount}`,
+                  `You've been outbid by an automatic bid! New highest bid: $${Number(newBid.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
                   {
                     position: "top-center",
                     autoClose: 5000,
@@ -98,7 +98,7 @@ function AuctionDetails() {
                 );
               } else {
                 toast.warning(
-                  `You've been outbid! New highest bid: $${newBid.amount}`,
+                  `You've been outbid! New highest bid: $${Number(newBid.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
                   {
                     position: "top-center",
                     autoClose: 5000,
@@ -411,7 +411,7 @@ function AuctionDetails() {
               <div className="current-bid-display">
                 <span className="currency">$</span>
                 <span className="bid-amount">
-                  {auction.current_bid || "0.00"}
+                  {Number(auction.current_bid || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </span>
               </div>
             </div>

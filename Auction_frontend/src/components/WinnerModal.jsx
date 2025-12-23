@@ -16,11 +16,11 @@ function WinnerModal({ isOpen, onClose, winner }) {
   } else if (role === "owner") {
     message = isDutch ? (
       <>
-        Your Dutch auction has ended. Final price: <strong>${winningBid}</strong>.
+        Your Dutch auction has ended. Final price: <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>.
       </>
     ) : (
       <>
-        Your auction has ended. Winning bid: <strong>${winningBid}</strong> by{" "}
+        Your auction has ended. Winning bid: <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> by{" "}
         <strong>{winnerName || "—"}</strong>.
       </>
     );
@@ -28,29 +28,29 @@ function WinnerModal({ isOpen, onClose, winner }) {
     message = isDutch ? (
       <>
         Congratulations! You successfully purchased this item at{" "}
-        <strong>${winningBid}</strong>.
+        <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>.
       </>
     ) : (
       <>
-        Congratulations — you won! Your bid of <strong>${winningBid}</strong>{" "}
+        Congratulations — you won! Your bid of <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>{" "}
         was the highest.
       </>
     );
   } else if (role === "loser") {
     message = isDutch ? (
       <>
-        This Dutch auction has ended. Item was sold at <strong>${winningBid}</strong>.
+        This Dutch auction has ended. Item was sold at <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>.
       </>
     ) : (
       <>
-        Auction has ended. Winning bid: <strong>${winningBid}</strong> by{" "}
+        Auction has ended. Winning bid: <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> by{" "}
         <strong>{winnerName || "—"}</strong>. Better luck next time.
       </>
     );
   } else {
     message = (
       <>
-        Auction has ended. Winning bid: <strong>${winningBid}</strong> by{" "}
+        Auction has ended. Winning bid: <strong>${Number(winningBid).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> by{" "}
         <strong>{winnerName || "—"}</strong>.
       </>
     );

@@ -55,10 +55,15 @@ function AuctionCard({ auction }) {
       )}
       <div className="auction-card-body">
         <h2 className="auction-card-title">{auction.title}</h2>
-        <p className="auction-card-description">{auction.description}</p>
         <div className="auction-card-price">
-          <span className="price-label">Current Bid:</span>
-          <span className="price-value">${auction.current_bid || "0.00"}</span>
+          <span className="price-label">
+            {auction.auction_type === 'dutch' ? 'Current Price:' : 'Current Bid:'}
+          </span>
+          <span className="price-value">
+            ${auction.auction_type === 'dutch' && auction.current_price 
+              ? Number(auction.current_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+              : Number(auction.current_bid || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </span>
         </div>
       </div>
       <div className="auction-card-footer">

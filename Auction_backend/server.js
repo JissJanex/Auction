@@ -26,7 +26,6 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-// Mount routes
 app.use("/auctions", auctionRoutes);
 app.use("/bids", bidRoutes);
 app.use("/autobids", autobidRoutes);
@@ -34,7 +33,6 @@ app.use("/auth", auth);
 app.use("/dutchauctions", dutchAuctionRoutes);
 app.use("/dutchbids", dutchBidRoutes);
 
-//Web socket setup
 const server = http.createServer(app);
 export const io = new Server(server, {
   cors: { origin: FRONTEND_URL === "*" ? "*" : [FRONTEND_URL] },
@@ -45,10 +43,8 @@ io.on("connection", (socket) => {
 
   socket.on("placeBid", async (data) => {
     try {
-      // data should include: auction_id, user_id, amount
       const result = await placeBid(data.auction_id, data.user_id, data.amount);
 
-      // Broadcast the manual bid to all connected clients
       io.emit("bidUpdate", {
         auction_id: result.auction_id,
         user_id: result.user_id,
@@ -57,9 +53,7 @@ io.on("connection", (socket) => {
         isAutobid: false,
       });
 
-      // If there were autobids triggered, broadcast each one
       if (result.autobidResult && Array.isArray(result.autobidResult)) {
-        // Emit each autobid in the chain
         for (const autobid of result.autobidResult) {
           io.emit("bidUpdate", autobid);
         }
@@ -75,7 +69,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start the HTTP server (used by both Express and Socket.IO)
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

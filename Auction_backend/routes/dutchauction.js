@@ -6,9 +6,7 @@ import { io } from "../server.js";
 
 const router = express.Router();
 
-//Function to update the dutch aution price
 export async function startDutchPriceDrop(auction_id) {
-  // Get drop interval first
   const initialRes = await db.query(
     `SELECT drop_interval_minutes FROM dutch_auctions WHERE auction_id=$1`,
     [auction_id]
@@ -21,7 +19,6 @@ export async function startDutchPriceDrop(auction_id) {
 
   const interval = setInterval(async () => {
     try {
-      // Get auction details from both tables
       const auctionRes = await db.query(
         `SELECT a.start_time, a.end_time, da.current_price, da.price_drop, da.winner_id
          FROM auctions a
@@ -40,12 +37,10 @@ export async function startDutchPriceDrop(auction_id) {
       const startTime = new Date(auction.start_time);
       const endTime = new Date(auction.end_time);
 
-      // Check if auction has started
       if (now < startTime) {
         return;
       }
 
-      // Check if auction has ended or been sold
       if (auction.winner_id || now > endTime) {
         return clearInterval(interval);
       }
@@ -65,10 +60,9 @@ export async function startDutchPriceDrop(auction_id) {
     } catch (error) {
       console.error(`Error in price drop for auction ${auction_id}:`, error);
     }
-  }, 1000 * 60 * dropIntervalMinutes); // drop_interval_minutes from DB
+  }, 1000 * 60 * dropIntervalMinutes);
 };
 
-//Get the dutch auction by Id
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   const auction = await db.query("SELECT * FROM dutch_auctions WHERE auction_id=$1", [
@@ -79,7 +73,6 @@ router.get("/:id", async (req, res) => {
   res.json(auction.rows[0]);
 });
 
-//Post a new dutch auction
 router.post("/", auth, upload.single("image"), async (req, res) => {
   const {
     title,
@@ -92,7 +85,7 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
   } = req.body;
 
   const owner_id = req.user.id;
-  const image_url = req.file.path; // Cloudinary URL
+  const image_url = req.file.path;
 
 
   const auction = await db.query(
@@ -110,7 +103,6 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
     [auction.rows[0].id, start_price, price_drop, drop_interval_minutes]
   );
 
-  // Start the price drop mechanism
   startDutchPriceDrop(auction.rows[0].id);
 
   res.json({ message: "Dutch auction created" });

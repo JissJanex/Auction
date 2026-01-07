@@ -20,7 +20,6 @@ function CreateAuction() {
     priceDrop: null,
     dropInterval: null,
   });
-  //To prevent multiple submissions while creating an auction
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check if user is logged in on mount

@@ -5,7 +5,7 @@ import cloudinary from "../conf/cloudinary.js";
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "auction_items",      // folder in Cloudinary
+    folder: "auction_items",
     allowed_formats: ["jpg", "png", "jpeg"],
   },
 });

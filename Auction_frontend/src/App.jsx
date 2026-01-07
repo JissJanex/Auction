@@ -23,7 +23,6 @@ function App() {
     localStorage.removeItem("token");
     setShowLogoutModal(false);
     navigate("/");
-    // Notify components about auth state change
     window.dispatchEvent(new Event("authChange"));
   };
 
@@ -35,7 +34,6 @@ function App() {
     <div className="app-container">
       <Header onLogoutClick={handleLogoutClick} />
 
-      {/* Main Content */}
       <main className="main-content">
         <Routes>
           <Route path="/" element={<AuctionPage />} />

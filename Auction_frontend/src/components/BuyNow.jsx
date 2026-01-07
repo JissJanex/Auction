@@ -4,13 +4,6 @@ import { API_BASE_URL } from "../config";
 import { toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode";
 
-/**
- * BuyNow Component for Dutch Auctions
- * 
- * Allows users to purchase the item at the current price
- * Sends POST request to /dutchbids/buy/:id
- */
-
 function BuyNow({ auction, onPurchase }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
 
@@ -21,7 +14,6 @@ function BuyNow({ auction, onPurchase }) {
       return;
     }
 
-    // Check if user is the owner
     try {
       const decoded = jwtDecode(token);
       if (decoded.id === auction.owner_id) {
@@ -34,7 +26,6 @@ function BuyNow({ auction, onPurchase }) {
       return;
     }
 
-    // Confirm purchase
     const confirmPurchase = window.confirm(
       `Are you sure you want to buy this item for $${Number(auction.current_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}?`
     );
@@ -56,7 +47,6 @@ function BuyNow({ auction, onPurchase }) {
 
       toast.success(response.data.message || "Purchase successful! You won the auction!");
       
-      // Call the callback to refresh auction data
       if (onPurchase) {
         onPurchase();
       }

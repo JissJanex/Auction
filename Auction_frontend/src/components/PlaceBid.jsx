@@ -13,7 +13,6 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
   const socketRef = useRef(null);
   const onBidPlacedRef = useRef(onBidPlaced);
 
-  // Keep callback ref updated
   useEffect(() => {
     onBidPlacedRef.current = onBidPlaced;
   }, [onBidPlaced]);
@@ -21,7 +20,6 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
   useEffect(() => {
     socketRef.current = io(SOCKET_URL);
 
-    // Listen for new bids from server
     socketRef.current.on("bidUpdate", (newBid) => {
       if (newBid.auction_id === auction.id) {
         setBids((prev) => [...prev, newBid]);
@@ -31,7 +29,6 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
       }
     });
 
-    // Listen for errors
     socketRef.current.on("bidError", (err) => {
       toast.error(err.error);
     });
@@ -46,19 +43,16 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
   }, [auction.id]);
 
   const handleBid = async () => {
-    // Validate auction prop
     if (!auction || !auction.id) {
       return;
     }
 
-    //Token from localstorage
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
       return;
     }
 
-    // Validate bid amount
     const amount = parseFloat(bid);
     const currentBid = parseFloat(auction.current_bid);
 
@@ -77,14 +71,13 @@ export default function PlaceBid({ auction, onBidPlaced } = {}) {
       return;
     }
 
-    // Send bid to server via Websocket
     socketRef.current.emit("placeBid", {
       auction_id: auction.id,
       user_id: jwtDecode(token).id,
       amount,
     });
 
-    setBid(""); // clear input
+    setBid("");
   };
 
   return (

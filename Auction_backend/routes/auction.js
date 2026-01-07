@@ -5,10 +5,8 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Get all active or upcoming auctions
 router.get("/", async (req, res) => {
   try {
-    //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
       SELECT a.*, da.current_price
       FROM auctions a
@@ -24,10 +22,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get all ended auctions
 router.get("/ended", async (req, res) => {
   try {
-    //Get a auctions where end time is over or if it is a dutch auction untill a winner exists
     const result = await db.query(`
       SELECT a.*, da.current_price
       FROM auctions a
@@ -43,22 +39,19 @@ router.get("/ended", async (req, res) => {
   }
 });
 
-// Get a single auction
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   const result = await db.query("SELECT * FROM auctions WHERE id=$1", [id]);
   res.json(result.rows[0]);
 });
 
-// Insert a new auction
 router.post("/", auth, upload.single("image"), async (req, res) => {
   const owner_id = req.user.id;
   const { title, description, start_time, end_time } = req.body;
 
-  const image_url = req.file.path; // Cloudinary URL
+  const image_url = req.file.path;
 
   try {
-    // Convert start_time and end_time to UTC format
     const startUTC = new Date(start_time).toISOString();
     const endUTC = new Date(end_time).toISOString();
 

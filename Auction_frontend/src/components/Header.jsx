@@ -6,10 +6,9 @@ function Header({ onLogoutClick }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if token exists
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
-  }, [location]); // Re-check on route change
+  }, [location]);
 
   // Listen for auth changes (login/logout)
   useEffect(() => {

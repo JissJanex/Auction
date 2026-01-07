@@ -11,7 +11,6 @@ export default function DutchAuctionToggle({ onDutchDataChange }) {
     setIsDutchMode(newMode);
     
     if (!newMode) {
-      // Reset fields when disabling Dutch mode
       setStartPrice("");
       setPriceDrop("");
       setDropInterval("");
@@ -22,7 +21,6 @@ export default function DutchAuctionToggle({ onDutchDataChange }) {
         dropInterval: null,
       });
     } else {
-      // Notify parent that Dutch mode is enabled
       onDutchDataChange({
         isDutch: true,
         startPrice: parseFloat(startPrice) || null,
@@ -37,7 +35,6 @@ export default function DutchAuctionToggle({ onDutchDataChange }) {
     if (field === "priceDrop") setPriceDrop(value);
     if (field === "dropInterval") setDropInterval(value);
 
-    // Update parent with current values
     onDutchDataChange({
       isDutch: isDutchMode,
       startPrice: field === "startPrice" ? parseFloat(value) : parseFloat(startPrice),

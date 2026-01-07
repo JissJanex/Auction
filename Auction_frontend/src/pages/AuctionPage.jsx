@@ -25,7 +25,6 @@ function AuctionPage() {
     fetchAuctions();
   }, []);
 
-  // Check if user is logged in to display name
   useEffect(() => {
     const checkUser = () => {
       const token = localStorage.getItem("token");
@@ -44,7 +43,6 @@ function AuctionPage() {
 
     checkUser();
 
-    // Listen for auth changes (login/logout)
     window.addEventListener('authChange', checkUser);
     return () => window.removeEventListener('authChange', checkUser);
   }, []);

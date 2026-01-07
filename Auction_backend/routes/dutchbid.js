@@ -5,13 +5,11 @@ import { io } from "../server.js";
 
 const router = express.Router();
 
-// Buy the item
 router.post('/buy/:id', auth, async (req, res) => {
   const { id } = req.params;
   const user_id = req.user.id;
 
   try {
-    // Check auction exists and not sold yet (need to join with auctions table for end_time)
     const auctionRes = await db.query(
       `SELECT da.*, a.end_time 
        FROM dutch_auctions da
@@ -23,10 +21,8 @@ router.post('/buy/:id', auth, async (req, res) => {
 
     const auction = auctionRes.rows[0];
 
-    // Update winner
     await db.query('UPDATE dutch_auctions SET winner_id=$1 WHERE auction_id=$2', [user_id, id]);
 
-    // Emit winner event
     io.emit('dutchAuctionSold', {
       auction_id: parseInt(id),
       winner_id: user_id,

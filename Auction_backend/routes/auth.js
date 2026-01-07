@@ -5,7 +5,6 @@ import { db } from "../conf/db.js";
 
 const router = express.Router();
 
-//Signup with bcrypt hashing
 router.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -28,17 +27,14 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-//Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  //Check if user exists
   const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
   if (user.rows.length === 0) {
     return res.status(400).send("User not found");
   }
 
-  //Compare password
   const validPassword = await bcrypt.compare(password, user.rows[0].password);
   if (!validPassword) {
     return res.status(400).send("Invalid password");

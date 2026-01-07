@@ -4,7 +4,6 @@ import auth from "../middleware/auth.js";
 
 const Router = express.Router();
 
-// Check if user has an active autobid for an auction
 Router.get("/", auth, async (req, res) => {
     const { auction_id, user_id } = req.query;
     

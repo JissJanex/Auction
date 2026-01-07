@@ -176,8 +176,7 @@ function AuctionDetails() {
                 const currentUserId = decoded.id;
                 if (currentUserId === auction.owner_id) role = "owner";
                 else if (currentUserId === auction.winner_id) role = "winner";
-              } catch (err) {
-              
+              } catch (err) {}
             }
             setWinnerInfo({ 
               role, 
@@ -232,9 +231,7 @@ function AuctionDetails() {
               const currentUserId = decoded.id;
               if (currentUserId === auction.owner_id) role = "owner";
               else if (currentUserId === top.user_id) role = "winner";
-            } catch (err) {
-              
-            }
+            } catch (err) {}
           }
           setWinnerInfo({ role, winnerName, winningBid });
         }
